@@ -1,4 +1,4 @@
-package com.github.mu.tools.archive;
+package com.github.mu.tools.interactive.model;
 
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -41,13 +41,13 @@ public class InteractiveModeStatus {
     public void addSuccessfulId(String error) {
         successfulId.add(error);
         if (successfulId.size() > MAX_PREVIOUS_SIZE) {
-            successfulId.iterator().remove();;
+            successfulId.iterator().remove();
         }
     }
 
     @Data
     @Builder
-    static class CopyWorkerStatus {
+    public static class CopyWorkerStatus {
         private transient String sourceDevice;
         private transient String operation;
         private transient String operationArguments;

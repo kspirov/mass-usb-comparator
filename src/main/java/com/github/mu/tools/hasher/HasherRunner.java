@@ -4,10 +4,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -17,16 +15,16 @@ import org.apache.commons.io.FileUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import com.github.mu.tools.OptionRunner;
+import com.github.mu.tools.AbstractCommandRunner;
 import com.github.mu.tools.helpers.ConfigHelpers;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Slf4j
-public class HasherRunner extends OptionRunner {
+public class HasherRunner extends AbstractCommandRunner {
 
-    private ConfigHelpers helpers;
+    private final ConfigHelpers helpers;
 
     public HasherRunner(ConfigHelpers helpers) {
         this.helpers = helpers;
@@ -82,9 +80,6 @@ public class HasherRunner extends OptionRunner {
                 writer.close();
             }
         }
-
-
     }
-
 
 }

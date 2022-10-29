@@ -6,7 +6,7 @@ package com.github.mu.tools;
 
 import java.util.Map;
 
-public abstract class OptionRunner {
+public abstract class AbstractCommandRunner {
 
     /**
      * Implements chain of responsibility.

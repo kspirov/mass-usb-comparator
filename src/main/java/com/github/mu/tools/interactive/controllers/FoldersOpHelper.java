@@ -1,4 +1,4 @@
-package com.github.mu.tools.archive;
+package com.github.mu.tools.interactive.controllers;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -6,6 +6,8 @@ import java.io.IOException;
 
 import org.apache.commons.io.FileUtils;
 import org.springframework.stereotype.Component;
+
+import com.github.mu.tools.interactive.model.InteractiveModeStatus;
 
 @Component
 public class FoldersOpHelper {

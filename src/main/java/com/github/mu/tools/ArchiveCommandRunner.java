@@ -1,4 +1,4 @@
-package com.github.mu.tools.archive;
+package com.github.mu.tools;
 
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -8,23 +8,26 @@ import java.util.concurrent.ThreadPoolExecutor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import com.github.mu.tools.OptionRunner;
+import com.github.mu.tools.interactive.controllers.AbstractFileOpsController;
+import com.github.mu.tools.interactive.controllers.ArchiveOpsController;
+import com.github.mu.tools.interactive.model.InteractiveModeStatus;
+import com.github.mu.tools.interactive.view.AnsiView;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-public class ArchiveRunner extends OptionRunner {
+public class ArchiveCommandRunner extends AbstractCommandRunner {
 
     private final AnsiView view;
 
-    private final AbstractFileOpsControlller controller;
+    private final ArchiveOpsController controller;
 
     private final InteractiveModeStatus model;
     private final ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
 
 
-    public ArchiveRunner(InteractiveModeStatus model, AnsiView view, AbstractFileOpsControlller controller) {
+    public ArchiveCommandRunner(InteractiveModeStatus model, AnsiView view, ArchiveOpsController controller) {
         this.view = view;
         this.controller = controller;
         this.model = model;

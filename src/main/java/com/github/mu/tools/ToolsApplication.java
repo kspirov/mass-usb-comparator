@@ -17,15 +17,15 @@ import lombok.extern.slf4j.Slf4j;
 public class ToolsApplication implements ApplicationRunner {
 
     @Autowired
-    private List<OptionRunner> runners;
+    private List<AbstractCommandRunner> runners;
 
     public static void main(String[] args) {
         SpringApplication.run(ToolsApplication.class, args);
     }
 
-    private OptionRunner getRunner(String option) {
+    private AbstractCommandRunner getRunner(String option) {
         if (runners != null) {
-            for (OptionRunner runner : runners) {
+            for (AbstractCommandRunner runner : runners) {
                 if (runner.accept(option)) {
                     return runner;
                 }
@@ -45,7 +45,7 @@ public class ToolsApplication implements ApplicationRunner {
             System.exit(3);
         }
         String argument = args.getNonOptionArgs().get(0);
-        OptionRunner runner = getRunner(argument);
+        AbstractCommandRunner runner = getRunner(argument);
         if (runner == null) {
             System.err.println("Wrong command argument " + argument);
             System.out.println();

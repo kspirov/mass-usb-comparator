@@ -1,4 +1,4 @@
-package com.github.mu.tools.archive;
+package com.github.mu.tools.interactive;
 
 public interface ArchivingConstants {
 

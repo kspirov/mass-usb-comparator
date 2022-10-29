@@ -1,20 +1,19 @@
-package com.github.mu.tools.archive;
+package com.github.mu.tools.interactive.view;
 
-import static com.github.mu.tools.archive.AnsiConstants.ANSI_RESET;
-import static com.github.mu.tools.archive.AnsiConstants.BACKGROUND_BLUE;
-import static com.github.mu.tools.archive.AnsiConstants.BACKGROUND_WHITE;
-import static com.github.mu.tools.archive.AnsiConstants.BLACK;
-import static com.github.mu.tools.archive.AnsiConstants.BLUE;
-import static com.github.mu.tools.archive.AnsiConstants.CLS;
-import static com.github.mu.tools.archive.AnsiConstants.GREEN;
-import static com.github.mu.tools.archive.AnsiConstants.HIDE_CURSOR;
-import static com.github.mu.tools.archive.AnsiConstants.RED;
-import static com.github.mu.tools.archive.AnsiConstants.SCREEN_START;
-import static com.github.mu.tools.archive.AnsiConstants.SHOW_CURSOR;
-import static com.github.mu.tools.archive.AnsiConstants.WHITE;
-import static com.github.mu.tools.archive.AnsiConstants.YELLOW;
+import static com.github.mu.tools.interactive.view.AnsiConstants.ANSI_RESET;
+import static com.github.mu.tools.interactive.view.AnsiConstants.BACKGROUND_BLUE;
+import static com.github.mu.tools.interactive.view.AnsiConstants.BACKGROUND_WHITE;
+import static com.github.mu.tools.interactive.view.AnsiConstants.BLACK;
+import static com.github.mu.tools.interactive.view.AnsiConstants.BLUE;
+import static com.github.mu.tools.interactive.view.AnsiConstants.CLS;
+import static com.github.mu.tools.interactive.view.AnsiConstants.GREEN;
+import static com.github.mu.tools.interactive.view.AnsiConstants.HIDE_CURSOR;
+import static com.github.mu.tools.interactive.view.AnsiConstants.RED;
+import static com.github.mu.tools.interactive.view.AnsiConstants.SCREEN_START;
+import static com.github.mu.tools.interactive.view.AnsiConstants.SHOW_CURSOR;
+import static com.github.mu.tools.interactive.view.AnsiConstants.WHITE;
+import static com.github.mu.tools.interactive.view.AnsiConstants.YELLOW;
 
-import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -22,6 +21,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+
+import com.github.mu.tools.interactive.model.InteractiveModeStatus;
 
 @Component
 public class AnsiView implements Runnable {
@@ -123,7 +124,7 @@ public class AnsiView implements Runnable {
         }
 
         System.out.print(BACKGROUND_WHITE + BLACK);
-        System.out.println("");
+        System.out.println();
         System.out.println("Press ENTER once you are done with all USB!                                             ");
         System.out.println(ANSI_RESET);
         System.out.println(ANSI_RESET);

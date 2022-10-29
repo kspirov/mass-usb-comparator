@@ -1,4 +1,4 @@
-package com.github.mu.tools.archive;
+package com.github.mu.tools;
 
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -7,23 +7,25 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 import org.springframework.stereotype.Component;
 
-import com.github.mu.tools.OptionRunner;
+import com.github.mu.tools.interactive.controllers.DeleteOpsController;
+import com.github.mu.tools.interactive.model.InteractiveModeStatus;
+import com.github.mu.tools.interactive.view.AnsiView;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-public class DeleteRunner extends OptionRunner {
+public class DeleteCommandRunner extends AbstractCommandRunner {
 
     private final AnsiView view;
 
-    private final FileOpsController controller;
+    private final DeleteOpsController controller;
 
     private final InteractiveModeStatus model;
     private final ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
 
 
-    public DeleteRunner(InteractiveModeStatus model, AnsiView view, FileOpsController controller) {
+    public DeleteCommandRunner(InteractiveModeStatus model, AnsiView view, DeleteOpsController controller) {
         this.view = view;
         this.controller = controller;
         this.model = model;
