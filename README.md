@@ -21,7 +21,7 @@ metadata from smart cams.
 Build command:
 
 ```
-gradle clean build
+./gradlew clean build
 ```
 
 If you are building on different platform, have in mind the jar file is self-contained - the entire deployment is
