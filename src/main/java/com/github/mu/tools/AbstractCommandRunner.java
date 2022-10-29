@@ -13,6 +13,6 @@ public abstract class AbstractCommandRunner {
      */
     public abstract boolean accept(String option);
 
-    public abstract void run(Map<String, String> optionArguments);
+    public abstract void run(String command, Map<String, String> optionArguments);
 
 }

@@ -126,43 +126,63 @@ public abstract class AbstractFileOpsController implements Runnable {
                     Path sourceFolder = entry.getValue().get(partitionIndex);
                     String destinationFolder = findDestinationFolderForPartition(masterFile.getPath(), partitionIndex);
                     final String sourceDevice = driveName + partitionIndex;
-
+                    String opDisplayName =
+                            opsMode==OperationMode.MOVE? "Moving":
+                            opsMode==OperationMode.DELETE? "Deleting":
+                            "Archiving";
                     if (!usedDevices.contains(sourceDevice)) {
                         InteractiveModeStatus.CopyWorkerStatus statusMsg =
                                 InteractiveModeStatus.CopyWorkerStatus.builder()
                                         .sourceDevice(sourceDevice)
-                                        .operation("Copying")
+                                        .operation(opDisplayName)
                                         .operationArguments(destinationFolder)
                                         .build();
                         model.getCurrentWorkers().put(sourceDevice, statusMsg);
                         Runnable worker = () -> {
-                            try {
-                                helper.copyFolders(statusMsg, statusMsg.getSourceDevice(),
-                                                   sourceFolder.toFile().getAbsolutePath(),
-                                                   destinationFolder, copyFilter);
-                                model.getSuccessfulPartitionCommand().incrementAndGet();
-                                if (partitionIndex.equals(masterPartition)) {
-                                    model.getSuccessfulDiskCommand().incrementAndGet();
+                            if (opsMode == OperationMode.MOVE || opsMode==OperationMode.ARCHIVE) {
+                                try {
+                                    helper.copyFolders(statusMsg, statusMsg.getSourceDevice(),
+                                                       sourceFolder.toFile().getAbsolutePath(),
+                                                       destinationFolder, copyFilter);
+                                    model.getSuccessfulPartitionCommand().incrementAndGet();
+                                    if (partitionIndex.equals(masterPartition)) {
+                                        model.getSuccessfulDiskCommand().incrementAndGet();
+                                    }
+                                    model.addSuccessfulId(masterFile.getName()
+                                                                  .replaceAll("\\.\\w+", ""));
+                                } catch (RuntimeException | IOException e) {
+                                    String error =
+                                            "Cannot copy " +sourceFolder + "to "+ destinationFolder + " exception: "
+                                            + e.getMessage();
+                                    model.addError(error);
+                                    log.error(e.getMessage(), e);
                                 }
-                                model.addSuccessfulId(masterFile.getName()
-                                                              .replaceAll("\\.\\w+", ""));
-                            } catch (RuntimeException | IOException e) {
-                                String error =
-                                        "Cannot copy " + sourceFolder + " to " + destinationFolder + " exception: "
-                                        + e.getMessage();
-                                model.addError(error);
-                                log.error(e.getMessage(), e);
-                            }
-                            try {
-                                shellCommandsHelper.unmountDevice(statusMsg, sourceDevice, sourceDevice);
-                                usedDevices.remove(sourceDevice);
-                            } catch (RuntimeException | IOException e) {
-                                String error = "Cannot unmount " + sourceDevice + " exception: " + e.getMessage();
-                                model.addError(error);
-                                log.error(e.getMessage(), e);
+                                try {
+                                    shellCommandsHelper.unmountDevice(statusMsg, sourceDevice, sourceDevice);
+                                    usedDevices.remove(sourceDevice);
+                                } catch (RuntimeException | IOException e) {
+                                    String error = "Cannot unmount " + sourceDevice + " exception: " + e.getMessage();
+                                    model.addError(error);
+                                    log.error(e.getMessage(), e);
 
-                            } finally {
-                                model.getCurrentWorkers().remove(sourceDevice);
+                                } finally {
+                                    model.getCurrentWorkers().remove(sourceDevice);
+                                }
+                            }
+                            if (opsMode==OperationMode.MOVE || opsMode==OperationMode.DELETE) {
+                                try {
+                                    helper.copyFolders(statusMsg, statusMsg.getSourceDevice(),
+                                                       sourceFolder.toFile().getAbsolutePath(),
+                                                       destinationFolder, copyFilter);
+                                    model.addSuccessfulId(masterFile.getName()
+                                                                  .replaceAll("\\.\\w+", ""));
+                                } catch (RuntimeException | IOException e) {
+                                    String error =
+                                            "Cannot process " + destinationFolder + " exception: "
+                                            + e.getMessage();
+                                    model.addError(error);
+                                    log.error(e.getMessage(), e);
+                                }
                             }
                         };
                         usedDevices.put(sourceDevice, worker);

@@ -48,6 +48,7 @@ public class AnsiView implements Runnable {
             }
         }
         System.out.println(SHOW_CURSOR + "Bye!");
+        System.out.println();
     }
 
 
@@ -66,8 +67,8 @@ public class AnsiView implements Runnable {
 
         System.out.println(YELLOW + "Base folder: " + WHITE + model.getBaseFolder() + ANSI_RESET);
         System.out.println(
-                YELLOW + "Number of successful partitions : " + WHITE + model.getSuccessfulPartitionCommand()
-                + ANSI_RESET);
+                YELLOW + "Number of successful partitions: " + WHITE + model.getSuccessfulPartitionCommand() +
+                YELLOW + ", disks: " + WHITE + model.getSuccessfulDiskCommand() + ANSI_RESET);
 
         long millis = System.currentTimeMillis() - model.getStartTimeMillis();
         long minutes = TimeUnit.MILLISECONDS.toMinutes(millis);

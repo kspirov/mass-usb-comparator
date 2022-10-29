@@ -65,6 +65,6 @@ public class ToolsApplication implements ApplicationRunner {
             optionArguments.put(optionName, value);
             log.info(optionName + "=" + value);
         });
-        runner.run(optionArguments);
+        runner.run(argument, optionArguments);
     }
 }

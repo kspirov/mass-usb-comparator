@@ -13,8 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Slf4j
-public abstract class MoveOpsController extends AbstractFileOpsController {
-
+public class MoveOpsController extends AbstractFileOpsController {
 
     public MoveOpsController(InteractiveModeStatus model,
                              FoldersOpHelper copyFoldersHelper,

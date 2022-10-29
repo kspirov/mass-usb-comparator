@@ -34,5 +34,17 @@ public class FoldersOpHelper {
 
     }
 
+    public void zapFolders(InteractiveModeStatus.CopyWorkerStatus model,
+                            String sourcePath) throws IOException {
+        File source = new File(sourcePath);
+        FileFilter apiFilter = (pathname) -> {
+            String name = pathname.getName();
+            model.setOperationArguments(pathname.getPath());
+            model.setOperation("Deleting file");
+            return true;
+        };
+        FileUtils.deleteDirectory(source);
+    }
+
 
 }

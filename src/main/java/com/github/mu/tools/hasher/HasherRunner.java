@@ -35,7 +35,7 @@ public class HasherRunner extends AbstractCommandRunner {
     }
 
     @Override
-    public void run(Map<String, String> optionArguments) {
+    public void run(String command, Map<String, String> optionArguments) {
         String input = optionArguments.get("folder");
         if (!StringUtils.hasText(input)) {
             input = "./archive";
