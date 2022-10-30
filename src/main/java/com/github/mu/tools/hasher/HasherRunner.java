@@ -17,6 +17,7 @@ import org.springframework.util.StringUtils;
 
 import com.github.mu.tools.AbstractCommandRunner;
 import com.github.mu.tools.helpers.ConfigHelpers;
+import com.github.mu.tools.helpers.ReadableHashHelper;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -25,9 +26,11 @@ import lombok.extern.slf4j.Slf4j;
 public class HasherRunner extends AbstractCommandRunner {
 
     private final ConfigHelpers helpers;
+    private final ReadableHashHelper hashHelper;
 
-    public HasherRunner(ConfigHelpers helpers) {
+    public HasherRunner(ConfigHelpers helpers, ReadableHashHelper hashHelper) {
         this.helpers = helpers;
+        this.hashHelper = hashHelper;
     }
     @Override
     public boolean accept(String option) {
@@ -50,29 +53,24 @@ public class HasherRunner extends AbstractCommandRunner {
         log.info("Master files found: "+current.size());
         System.out.println("Calculating hash for "+current.size()+" files...");
         PrintWriter writer = null;
-        TreeMap<String, byte[]> hashes = new TreeMap<>();
+        TreeMap<String, String> hashes = new TreeMap<>();
         try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-
-            int fileCount = 0;
             for (File file : current) {
-                fileCount++;
-                byte[] content = FileUtils.readFileToByteArray(file);
-                byte[] encodedhash = digest.digest(content);
-                hashes.put(file.getName(), encodedhash);
+                String hash = hashHelper.getReadableHash(file);
+                String masterName = file.getName();
+                String masterKey = masterName.substring(0, masterName.lastIndexOf("."));
+                hashes.put(masterKey, hash);
             }
             File o = new File(output);
             System.out.println("Hashes calculated, writing to "+o);
             writer = new PrintWriter(new FileWriter(o));
-            Base32 base32 = new Base32();
-            for (Map.Entry<String, byte[]>  e: hashes.entrySet()) {
-                String base = base32.encodeAsString(e.getValue());
-                writer.println(e.getKey()+","+base.substring(0, base.length()-4));
+            for (Map.Entry<String, String>  e: hashes.entrySet()) {
+                writer.println(e.getKey()+","+e.getValue());
             }
             writer.flush();
             System.out.println("\n Done, bye \n");
 
-        } catch (NoSuchAlgorithmException | IOException | SecurityException e) {
+        } catch (IOException | SecurityException e) {
             log.error(e.getMessage(), e);
             e.printStackTrace();
         } finally {
