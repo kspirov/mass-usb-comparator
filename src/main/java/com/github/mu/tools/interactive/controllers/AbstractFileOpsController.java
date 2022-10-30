@@ -201,10 +201,7 @@ public abstract class AbstractFileOpsController implements Runnable {
                         helper.copyFolders(statusMsg, statusMsg.getSourceDevice(),
                                            sourceFolder.toFile().getAbsolutePath(),
                                            destinationFolder, copyFilter);
-                        model.getSuccessfulPartitionCommand().incrementAndGet();
-                        if (partitionIndex.equals(masterPartition)) {
-                            model.getSuccessfulDiskCommand().incrementAndGet();
-                        }
+
                     } catch (RuntimeException | IOException e) {
                         String error =
                                 "Cannot copy " +sourceFolder + "to "+ destinationFolder + " exception: "
@@ -215,6 +212,9 @@ public abstract class AbstractFileOpsController implements Runnable {
                     }
                 }
                 if (opsMode==OperationMode.MOVE || opsMode==OperationMode.DELETE) {
+                    if (opsMode==OperationMode.MOVE) {
+                        Uninterruptibles.sleepUninterruptibly(500, TimeUnit.MILLISECONDS);
+                    }
                     try {
                         helper.zapFolders(statusMsg, sourceFolder.toFile().getAbsolutePath());
                     } catch (RuntimeException | IOException e) {
@@ -225,6 +225,10 @@ public abstract class AbstractFileOpsController implements Runnable {
                         model.addErrorId(masterFileIdWithPartition);
                         log.error(e.getMessage(), e);
                     }
+                }
+                model.getSuccessfulPartitionCommand().incrementAndGet();
+                if (partitionIndex.equals(masterPartition)) {
+                    model.getSuccessfulDiskCommand().incrementAndGet();
                 }
                 try {
                     shellCommandsHelper.unmountDevice(statusMsg, sourceDevice, sourceDevice);

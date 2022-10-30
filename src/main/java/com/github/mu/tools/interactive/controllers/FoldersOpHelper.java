@@ -3,11 +3,13 @@ package com.github.mu.tools.interactive.controllers;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
 import org.springframework.stereotype.Component;
 
 import com.github.mu.tools.interactive.model.InteractiveModeStatus;
+import com.google.common.util.concurrent.Uninterruptibles;
 
 @Component
 public class FoldersOpHelper {
@@ -37,13 +39,13 @@ public class FoldersOpHelper {
     public void zapFolders(InteractiveModeStatus.CopyWorkerStatus model,
                             String sourcePath) throws IOException {
         File source = new File(sourcePath);
-        FileFilter apiFilter = (pathname) -> {
-            String name = pathname.getName();
-            model.setOperationArguments(pathname.getPath());
+        File[] files = source.listFiles();
+        for (File f: files) {
+            String name = f.getName();
+            model.setOperationArguments(name);
             model.setOperation("Deleting file");
-            return true;
-        };
-        FileUtils.deleteDirectory(source);
+            FileUtils.forceDelete(f);
+        }
     }
 
 
