@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -112,17 +113,25 @@ public abstract class AbstractFileOpsController implements Runnable {
 
 
     public void run() {
-        ConcurrentHashMap<String, Runnable> usedDevices = new ConcurrentHashMap<>();
+        ConcurrentHashMap<String, Runnable> currentlyUsedDevices = new ConcurrentHashMap<>();
+        HashSet<String> everStartedDevices = new HashSet<>();
         Map<String, Map<String, Path>> mounted;
         Set<String> partitions = getPartitionBases().keySet();
-        while (!(mounted = getCurrentMountedDevices()).isEmpty() || model.isInteractiveModeEnabled()) {
+        while (!currentlyUsedDevices.isEmpty() || model.isInteractiveModeEnabled()) {
+            mounted = getCurrentMountedDevices();
             for (Map.Entry<String, Map<String, Path>> entry : mounted.entrySet()) {
                 Path masterPartitionPath = entry.getValue().get(masterPartition);
                 File masterFile = configHelpers.findMasterFile(masterPartitionPath.toFile());
-                if (!usedDevices.contains(masterFile.getAbsoluteFile())) {
-                    Runnable worker = new FileOpsWorker(entry, partitions, masterFile);
-                    usedDevices.put(masterFile.getAbsolutePath(), worker);
-                    workerTaskPool.execute(worker);
+
+                if (masterFile != null) {
+                    String masterKey = masterFile.getAbsolutePath();
+                     if (!everStartedDevices.contains(masterKey)) {
+                         Runnable worker = new FileOpsWorker(entry, partitions, masterFile,
+                                                             () -> currentlyUsedDevices.remove(masterKey));
+                         everStartedDevices.add(masterKey);
+                         currentlyUsedDevices.put(masterKey, worker);
+                         workerTaskPool.execute(worker);
+                     }
                 }
             }
             Uninterruptibles.sleepUninterruptibly(500, TimeUnit.MILLISECONDS);
@@ -136,24 +145,47 @@ public abstract class AbstractFileOpsController implements Runnable {
         private Collection<String> partitions;
         private File masterFile;
 
-        FileOpsWorker(Map.Entry<String, Map<String, Path>> entry, Collection<String> partitions, File masterFile) {
+        private Runnable onDone;
+
+        FileOpsWorker(Map.Entry<String, Map<String, Path>> entry, Collection<String> partitions, File masterFile,
+                      Runnable onDone) {
             this.driveName = entry.getKey();
             this.entry = entry;
             this.partitions = partitions;
             this.masterFile = masterFile;
+            this.onDone = onDone;
         }
 
         @Override
         public void run() {
+            try {
+                doIt();
+            } finally {
+                onDone.run();
+            }
+        }
+
+        private void doIt() {
             for (String partitionIndex : partitions) {
+
                 Path sourceFolder = entry.getValue().get(partitionIndex);
                 String destinationFolder = findDestinationFolderForPartition(masterFile.getPath(), partitionIndex);
                 final String sourceDevice = driveName + partitionIndex;
+
+                InteractiveModeStatus.CopyWorkerStatus statusMsg =
+                        InteractiveModeStatus.CopyWorkerStatus.builder()
+                                .sourceDevice(sourceDevice)
+                                .operation("Initial preparation")
+                                .operationArguments(destinationFolder)
+                                .build();;
+                model.getCurrentWorkers().put(sourceDevice, statusMsg);
+                Uninterruptibles.sleepUninterruptibly(500, TimeUnit.MILLISECONDS);
                 String opDisplayName =
                         opsMode==OperationMode.MOVE? "Moving":
                         opsMode==OperationMode.DELETE? "Deleting":
                         "Archiving";
-                InteractiveModeStatus.CopyWorkerStatus statusMsg =
+
+                statusMsg =
                         InteractiveModeStatus.CopyWorkerStatus.builder()
                                 .sourceDevice(sourceDevice)
                                 .operation(opDisplayName)

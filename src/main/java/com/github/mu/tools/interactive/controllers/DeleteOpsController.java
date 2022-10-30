@@ -23,7 +23,7 @@ public class DeleteOpsController extends AbstractFileOpsController {
                                @Value("${partition.bases}") String partitionBases,
                                @Value("${copy.filter}") String copyFilter) {
 
-        super(OperationMode.MOVE, model, copyFoldersHelper, shellCommandsHelper, configHelpers, masterPartition,
+        super(OperationMode.DELETE, model, copyFoldersHelper, shellCommandsHelper, configHelpers, masterPartition,
               partitionBases, copyFilter);
     }
 }
