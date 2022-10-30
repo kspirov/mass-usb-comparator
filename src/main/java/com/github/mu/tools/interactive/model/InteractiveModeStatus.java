@@ -11,14 +11,18 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Getter
 @Setter
+@Slf4j
 public class InteractiveModeStatus {
 
     private static final int MAX_ERROR_SIZE = 3;
-    private static final int MAX_PREVIOUS_SIZE = 1;
+    private static final int MAX_PREVIOUS_MEDIA_ID_SIZE = 8;
+
+    private static final int MAX_ERROR_MEDIA_ID_SIZE = 8;
 
     private volatile String operationTypeDisplayName = "copy operation";
     private volatile long startTimeMillis;
@@ -29,7 +33,7 @@ public class InteractiveModeStatus {
     private volatile ConcurrentHashMap<String, CopyWorkerStatus> currentWorkers = new ConcurrentHashMap<>();
     private volatile LinkedList<String> errors = new LinkedList<>();
     private volatile LinkedHashSet<String> successfulId = new LinkedHashSet<>();
-
+    private volatile LinkedHashSet<String> errorId = new LinkedHashSet<>();
 
     public void addError(String error) {
         errors.addLast(error);
@@ -38,10 +42,19 @@ public class InteractiveModeStatus {
         }
     }
 
-    public void addSuccessfulId(String error) {
-        successfulId.add(error);
-        if (successfulId.size() > MAX_PREVIOUS_SIZE) {
+    public void addSuccessfulId(String success) {
+        log.info("Success in {}", success);
+        successfulId.add(success);
+        if (successfulId.size() > MAX_PREVIOUS_MEDIA_ID_SIZE) {
             successfulId.iterator().remove();
+        }
+    }
+
+    public void addErrorId(String error) {
+        log.error("Error in {}", error);
+        errorId.add(error);
+        if (errorId.size() > MAX_ERROR_MEDIA_ID_SIZE) {
+            errorId.iterator().remove();
         }
     }
 

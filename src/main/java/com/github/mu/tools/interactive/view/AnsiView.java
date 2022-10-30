@@ -6,6 +6,7 @@ import static com.github.mu.tools.interactive.view.AnsiConstants.BACKGROUND_WHIT
 import static com.github.mu.tools.interactive.view.AnsiConstants.BLACK;
 import static com.github.mu.tools.interactive.view.AnsiConstants.BLUE;
 import static com.github.mu.tools.interactive.view.AnsiConstants.CLS;
+import static com.github.mu.tools.interactive.view.AnsiConstants.CYAN;
 import static com.github.mu.tools.interactive.view.AnsiConstants.GREEN;
 import static com.github.mu.tools.interactive.view.AnsiConstants.HIDE_CURSOR;
 import static com.github.mu.tools.interactive.view.AnsiConstants.RED;
@@ -53,7 +54,7 @@ public class AnsiView implements Runnable {
 
 
     public void printModel() {
-        int h = calculateTasksHash();
+        int h = calculateModelHash();
         if (tasksHash != h) {
             // task is changed, clear the screen instead of just moving the cursor
             System.out.println(CLS);
@@ -86,14 +87,31 @@ public class AnsiView implements Runnable {
                 if (first) {
                     first = false;
                 } else {
-                    System.out.println(YELLOW + ", ");
+                    System.out.print(YELLOW + ", ");
                 }
-                System.out.println(WHITE + id + " ");
+                System.out.print(WHITE + id);
 
             }
             System.out.println();
             System.out.println();
         }
+        if (!model.getErrorId().isEmpty()) {
+            System.out.print("Last problematic partitions: ");
+            boolean first = true;
+            for (String id : model.getErrorId()) {
+                if (first) {
+                    first = false;
+                } else {
+                    System.out.print(YELLOW + ", ");
+                }
+                System.out.print(RED + id);
+
+            }
+            System.out.println();
+            System.out.println();
+        }
+
+
         System.out.print(BACKGROUND_BLUE);
 
         TreeSet<String> keys = new TreeSet<>();
@@ -131,15 +149,14 @@ public class AnsiView implements Runnable {
         System.out.println(ANSI_RESET);
     }
 
-    public int calculateTasksHash() {
+    private int calculateModelHash() {
         ConcurrentHashMap.KeySetView<String, InteractiveModeStatus.CopyWorkerStatus> keySet =
                 model.getCurrentWorkers().keySet();
 
-        if (keySet == null || keySet.isEmpty()) {
-            return 0;
-        }
         Set set = new TreeSet();
         set.addAll(keySet);
+        set.addAll(model.getErrors());
+        set.addAll(model.getSuccessfulId());
         return set.hashCode();
     }
 }
