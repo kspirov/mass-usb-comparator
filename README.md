@@ -1,9 +1,7 @@
-Mass USB Comparator 
 
-# Purpose
+# About the Mass USB Comparator 
 
-A lightweight self-contained local tool for various semi-automatic tasks performed on big group of similar USB  media,
-(hundreds or even thousands of devices). Includes backing up, wiping, comparing media peers.
+This is a lightweight self-contained local tool for various semi-automatic tasks performed on big group of similar USB  media, (hundreds or even thousands of devices). The tool supports backing up, wiping, comparing media peers.
 
 This is applicable for results from election voting machines, telemetry from industrial devices, data and
 metadata from smart cams.
@@ -38,7 +36,6 @@ java -jar mass-usb-comparator-1.0.jar  archive  --folder=base.dir
 ### Rapid hash list extractor
 ```
 java -jar mass-usb-comparator-1.0.jar  hasher --folder=archive --file=hasher2.csv
-
 ```
 This will generate a common file with the hashes of all master files. The list will be lexicographically sorted by the name of the master file,
 
