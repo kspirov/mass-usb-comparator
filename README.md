@@ -23,7 +23,6 @@ Build command:
 ```
 ./gradlew clean build
 ```
-
 If you are building on different platform, have in mind the jar file is self-contained - the entire deployment is
 just to copy this single jar file
 ```
@@ -31,8 +30,6 @@ just to copy this single jar file
 ```
 
 ## Most common operations
-
-### Interactive media archiving (TBD, more details needed)
 
 ### Rapid archiver interactive mode
 ```
@@ -43,9 +40,7 @@ java -jar mass-usb-comparator-1.0.jar  archive  --folder=base.dir
 java -jar mass-usb-comparator-1.0.jar  hasher --folder=archive --file=hasher2.csv
 
 ```
-
 This will generate a common file with the hashes of all master files. The list will be lexicographically sorted by the name of the master file,
-
 
 ### Rapid wiper interactive mode
 ```
