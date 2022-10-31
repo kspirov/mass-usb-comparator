@@ -21,8 +21,7 @@ Build command:
 ```
 ./gradlew clean build
 ```
-If you are building on different platform, have in mind the jar file is self-contained - the entire deployment is
-just to copy this single jar file
+If you are building on different platform, have in mind the jar file is self-contained - the entire deployment is just to copy this single jar file
 ```
 ./gradlew clean build && sshpass -p user123 scp build/libs/mass-usb-comparator-1.0.jar user@192.168.1.24:/home/user/Downloads/delta
 ```
@@ -37,7 +36,7 @@ java -jar mass-usb-comparator-1.0.jar  archive  --folder=base.dir
 ```
 java -jar mass-usb-comparator-1.0.jar  hasher --folder=archive --file=hasher2.csv
 ```
-This will generate a common file with the hashes of all master files. The list will be lexicographically sorted by the name of the master file,
+This will generate a common file with the hashes of all master files. The list will be lexicographically sorted by the name of the master file. As result, comaring of two groups of results (the primary and secondary) will be extremely easy. One examople application of this process is the independent audit of the election result software.
 
 ### Rapid wiper interactive mode
 ```
