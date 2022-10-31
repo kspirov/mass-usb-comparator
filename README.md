@@ -1,4 +1,4 @@
-Mass USB Comparator (readme WIP)
+Mass USB Comparator 
 
 # Purpose
 
@@ -8,7 +8,7 @@ A lightweight self-contained local tool for various semi-automatic tasks perform
 This is applicable for results from election voting machines, telemetry from industrial devices, data and
 metadata from smart cams.
 
-# Getting Started (WIP)
+# Getting Started 
 
 ## Required environment
 
@@ -34,20 +34,29 @@ just to copy this single jar file
 
 ### Interactive media archiving (TBD, more details needed)
 
-Rapid archiver interactive mode
+### Rapid archiver interactive mode
 ```
 java -jar mass-usb-comparator-1.0.jar  archive  --folder=base.dir
 ```
-Rapid hash list extractor
+### Rapid hash list extractor
 ```
 java -jar mass-usb-comparator-1.0.jar  hasher --folder=archive --file=hasher2.csv
 
 ```
 
-Rapid wiper interactive mode
-```
-TBD
-```
+This will generate a common file with the hashes of all master files. The list will be lexicographically sorted by the name of the master file,
 
 
+### Rapid wiper interactive mode
+```
+sudo java -jar mass-usb-comparator-1.0.jar  hasher --folder=delete --file=hasher2.csv
+```
+Sudo might be necessary as otherwise the program may not have write access to the mounted media. This is not a secure deletion, just a stanard delet ob all filew from the mounted systems.
+
+### Move data in interactive mode
+```
+sudo java -jar mass-usb-comparator-1.0.jar  hasher --folder=delete --file=hasher2.csv
+```
+This is just combination of "archive" and "wipe" mode
+ 
 # Project customization and properties (TBD)
