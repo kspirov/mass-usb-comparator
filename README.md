@@ -1,7 +1,7 @@
 
 # About the Mass USB Comparator 
 
-This is a lightweight self-contained local tool for various semi-automatic tasks performed on big group of similar USB  media, (hundreds or even thousands of devices). The tool supports backing up, wiping, comparing media peers.
+This is a lightweight self-contained local tool for various semi-automatic tasks performed on big group of similar USB media (hundreds or even thousands of devices). The tool supports backing up, wiping, comparing media peers.
 
 This is applicable for results from election voting machines, telemetry from industrial devices, data and
 metadata from smart cams.
