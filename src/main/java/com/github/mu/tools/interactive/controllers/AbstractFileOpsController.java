@@ -124,7 +124,7 @@ public abstract class AbstractFileOpsController implements Runnable {
                 File masterFile = configHelpers.findMasterFile(masterPartitionPath.toFile());
 
                 if (masterFile != null) {
-                    String masterKey = masterFile.getAbsolutePath();
+                    String masterKey = masterFile.getName();
                      if (!everStartedDevices.contains(masterKey)) {
                          Runnable worker = new FileOpsWorker(entry, partitions, masterFile,
                                                              () -> currentlyUsedDevices.remove(masterKey));
