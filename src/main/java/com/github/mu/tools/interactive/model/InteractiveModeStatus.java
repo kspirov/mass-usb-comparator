@@ -1,5 +1,6 @@
 package com.github.mu.tools.interactive.model;
 
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,7 +47,9 @@ public class InteractiveModeStatus {
         log.info("Success in {}", success);
         successfulId.add(success);
         if (successfulId.size() > MAX_PREVIOUS_MEDIA_ID_SIZE) {
-            successfulId.iterator().remove();
+            Iterator<String> i = successfulId.iterator();
+            i.next();
+            i.remove();
         }
     }
 
@@ -54,7 +57,9 @@ public class InteractiveModeStatus {
         log.error("Error in {}", error);
         errorId.add(error);
         if (errorId.size() > MAX_ERROR_MEDIA_ID_SIZE) {
-            errorId.iterator().remove();
+            Iterator<String> i = errorId.iterator();
+            i.next();
+            i.remove();
         }
     }
 
