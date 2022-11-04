@@ -166,8 +166,9 @@ public abstract class AbstractFileOpsController implements Runnable {
         }
 
         private void doIt() {
+            int currentPartition = 0;
             for (String partitionIndex : partitions) {
-
+                currentPartition++;
                 Path sourceFolder = entry.getValue().get(partitionIndex);
                 String destinationFolder = findDestinationFolderForPartition(masterFile.getPath(), partitionIndex);
                 final String sourceDevice = driveName + partitionIndex;
@@ -227,11 +228,14 @@ public abstract class AbstractFileOpsController implements Runnable {
                     }
                 }
                 model.getSuccessfulPartitionCommand().incrementAndGet();
-                if (partitionIndex.equals(masterPartition)) {
-                    model.getSuccessfulDiskCommand().incrementAndGet();
-                }
+
                 try {
-                    shellCommandsHelper.unmountDevice(statusMsg, sourceDevice, sourceDevice);
+                    Uninterruptibles.sleepUninterruptibly(500, TimeUnit.MILLISECONDS);
+                    shellCommandsHelper.unmountPartition(statusMsg, sourceDevice, sourceDevice);
+                    if (currentPartition==partitions.size()) {
+                        Uninterruptibles.sleepUninterruptibly(1000, TimeUnit.MILLISECONDS);
+                        shellCommandsHelper.fullUnmount(statusMsg, sourceDevice, sourceDevice);
+                    }
                     if (!model.getErrorId().contains(masterFileIdWithPartition)) {
                         model.addSuccessfulId(masterFileIdWithPartition);
                     }
@@ -245,6 +249,7 @@ public abstract class AbstractFileOpsController implements Runnable {
                     model.getCurrentWorkers().remove(sourceDevice);
                 }
             }
+            model.getSuccessfulDiskCommand().incrementAndGet();
         }
     }
 }

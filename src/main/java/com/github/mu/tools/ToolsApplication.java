@@ -37,7 +37,7 @@ public class ToolsApplication implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        System.out.println("MASS USB TOOLS, version 1.01");
+        System.out.println("MASS USB TOOLS, version 1.02");
         System.out.println();
         if (args.getNonOptionArgs().size() != 1) {
             System.err.println("Wrong number of command line arguments - please give a single command");

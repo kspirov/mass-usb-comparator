@@ -9,4 +9,6 @@ public interface ArchivingConstants {
     String LIST_PARTITIONS_CMD = "lsblk -l";
 
     String UMOUNT_CMD = "umount %s -l";
+
+    String FULL_UNMOUNT_CMD = "udisksctl power-off -b %s";
 }

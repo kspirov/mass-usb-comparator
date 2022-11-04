@@ -1,6 +1,7 @@
 package com.github.mu.tools.helpers;
 
 import static com.github.mu.tools.interactive.ArchivingConstants.DEV_FOLDER_START;
+import static com.github.mu.tools.interactive.ArchivingConstants.FULL_UNMOUNT_CMD;
 import static com.github.mu.tools.interactive.ArchivingConstants.UMOUNT_CMD;
 
 import java.io.ByteArrayOutputStream;
@@ -34,9 +35,9 @@ public class CommonShellCommandsHelper {
         this.masterPartition = masterPartition;
     }
 
-    public void unmountDevice(InteractiveModeStatus.CopyWorkerStatus model, String displayName, String masterName)
+    public void unmountPartition(InteractiveModeStatus.CopyWorkerStatus model, String displayName, String masterName)
             throws IOException {
-        model.setOperation("Unmounting device");
+        model.setOperation("Unmounting device partition");
         model.setSourceDevice(displayName);
         model.setOperationArguments(masterName);
         String osDeviceName = DEV_FOLDER_START + masterName;
@@ -49,7 +50,21 @@ public class CommonShellCommandsHelper {
         executor.setExitValue(0);
         executor.execute(cmdLine);
     }
-
+    public void fullUnmount(InteractiveModeStatus.CopyWorkerStatus model, String displayName, String masterName)
+            throws IOException {
+        model.setOperation("Full unmount");
+        model.setSourceDevice(displayName);
+        model.setOperationArguments(masterName);
+        String osDeviceName = DEV_FOLDER_START + masterName;
+        CommandLine cmdLine = CommandLine.parse(String.format(FULL_UNMOUNT_CMD, osDeviceName));
+        DefaultExecutor executor = new DefaultExecutor();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        executor.setStreamHandler(new PumpStreamHandler(baos, null));
+        ExecuteWatchdog watchdog = new ExecuteWatchdog(60000);
+        executor.setWatchdog(watchdog);
+        executor.setExitValue(0);
+        executor.execute(cmdLine);
+    }
 
     /**
      * Returns a map by device name and value - map by device index and mount point
