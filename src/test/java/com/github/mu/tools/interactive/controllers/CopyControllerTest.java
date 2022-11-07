@@ -17,16 +17,17 @@ class CopyControllerTest {
     void testFindBaseFolderForPartition() {
         ArchiveOpsController
                 abstractFileOpsControlller = new ArchiveOpsController(new InteractiveModeStatus(),
-                                                                   null,
+                                                                      null,
                                                                       null,
                                                                       null,
                                                                       "1",
-                                                                   "1:{2}/{-4},2:{2}/{-4}/ext",
-                                                                   "lost+found,System Volume Information");
-        String s1 = abstractFileOpsControlller.findDestinationFolderForPartition("014000028.csv", "1");
+                                                                      "1:{2}/{-4},2:{2}/{-4}/ext",
+                                                                      "lost+found,System Volume Information");
+        String s1 = abstractFileOpsControlller.findDestinationFolderForPartition("x", "014000028.csv", "1");
         assertThat(s1).endsWith("01/014000028");
-        String s2 = abstractFileOpsControlller.findDestinationFolderForPartition("014000028.csv", "2");
+        String s2 = abstractFileOpsControlller.findDestinationFolderForPartition("x", "014000028.csv", "2");
         assertThat(s2).endsWith("01/014000028/ext");
+
     }
 
 }

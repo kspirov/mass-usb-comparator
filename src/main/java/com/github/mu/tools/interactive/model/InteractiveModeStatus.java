@@ -3,7 +3,9 @@ package com.github.mu.tools.interactive.model;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.stereotype.Component;
@@ -30,7 +32,7 @@ public class InteractiveModeStatus {
     private volatile boolean interactiveModeEnabled;
     private volatile AtomicInteger successfulPartitionCommand = new AtomicInteger();
     private volatile AtomicInteger successfulDiskCommand = new AtomicInteger();
-    private volatile String baseFolder;
+    private volatile List<String> baseFolders;
     private volatile ConcurrentHashMap<String, CopyWorkerStatus> currentWorkers = new ConcurrentHashMap<>();
     private volatile LinkedList<String> errors = new LinkedList<>();
     private volatile LinkedHashSet<String> successfulId = new LinkedHashSet<>();

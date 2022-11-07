@@ -15,13 +15,12 @@ import static com.github.mu.tools.interactive.view.AnsiConstants.SHOW_CURSOR;
 import static com.github.mu.tools.interactive.view.AnsiConstants.WHITE;
 import static com.github.mu.tools.interactive.view.AnsiConstants.YELLOW;
 
-import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import com.github.mu.tools.interactive.model.InteractiveModeStatus;
 
@@ -29,8 +28,6 @@ import com.github.mu.tools.interactive.model.InteractiveModeStatus;
 public class AnsiView implements Runnable {
 
     private final InteractiveModeStatus model;
-
-    private int tasksHash;
 
     public AnsiView(InteractiveModeStatus model) {
         this.model = model;
@@ -54,19 +51,14 @@ public class AnsiView implements Runnable {
 
 
     public void printModel() {
-        int h = calculateModelHash();
-        if (tasksHash != h) {
-            // task is changed, clear the screen instead of just moving the cursor
-            System.out.println(CLS);
-            tasksHash = h;
-        }
+        System.out.println(CLS);
         System.out.println(SCREEN_START);
         System.out.print(BACKGROUND_WHITE + BLACK);
         System.out.println("Interactive mode - just plug USB media and the "+BLUE+model.getOperationTypeDisplayName()+BLACK+" will be performed for you.");
         System.out.println("Once the work is done, the media will be unmounted automatically so you can change it.  ");
         System.out.println(ANSI_RESET);
 
-        System.out.println(YELLOW + "Base folder: " + WHITE + model.getBaseFolder() + ANSI_RESET);
+        System.out.println(YELLOW + "Destination: " + WHITE + StringUtils.collectionToCommaDelimitedString(model.getBaseFolders()) + ANSI_RESET);
         System.out.println(
                 YELLOW + "Number of successful partitions: " + WHITE + model.getSuccessfulPartitionCommand() +
                 YELLOW + ", disks: " + WHITE + model.getSuccessfulDiskCommand() + ANSI_RESET);
@@ -138,7 +130,7 @@ public class AnsiView implements Runnable {
                                + " do not remove any media at this moment!                         " + ANSI_RESET);
         } else {
             System.out.println(BACKGROUND_WHITE + BLACK
-                               + "No active tasks, all media correctly unmounted! You can remove/change the USB.          "
+                               + "No active tasks.                                                                       "
                                + ANSI_RESET);
         }
 
@@ -147,16 +139,5 @@ public class AnsiView implements Runnable {
         System.out.println("Press ENTER once you are done with all USB!                                             ");
         System.out.println(ANSI_RESET);
         System.out.println(ANSI_RESET);
-    }
-
-    private int calculateModelHash() {
-        ConcurrentHashMap.KeySetView<String, InteractiveModeStatus.CopyWorkerStatus> keySet =
-                model.getCurrentWorkers().keySet();
-
-        Set set = new TreeSet();
-        set.addAll(keySet);
-        set.addAll(model.getErrors());
-        set.addAll(model.getSuccessfulId());
-        return set.hashCode();
     }
 }

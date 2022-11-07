@@ -37,6 +37,7 @@ public class CommonShellCommandsHelper {
 
     public void unmountPartition(InteractiveModeStatus.CopyWorkerStatus model, String displayName, String masterName)
             throws IOException {
+        log.info("Unmounting partially {}", masterName);
         model.setOperation("Unmounting device partition");
         model.setSourceDevice(displayName);
         model.setOperationArguments(masterName);
@@ -52,6 +53,7 @@ public class CommonShellCommandsHelper {
     }
     public void fullUnmount(InteractiveModeStatus.CopyWorkerStatus model, String displayName, String masterName)
             throws IOException {
+        log.info("Unmounting fully {}", masterName);
         model.setOperation("Full unmount");
         model.setSourceDevice(displayName);
         model.setOperationArguments(masterName);
@@ -86,7 +88,7 @@ public class CommonShellCommandsHelper {
             throw new UncheckedIOException(e);
         }
         String result = baos.toString();
-        log.info("List partitions {} ",result);
+        log.trace("List partitions {} ",result);
         return result;
     }
 

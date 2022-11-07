@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -62,14 +61,14 @@ public abstract class AbstractFileOpsController implements Runnable {
     }
 
 
-    String findDestinationFolderForPartition(String masterPath, String partitionIndex) {
+    String findDestinationFolderForPartition(String baseFolder, String masterPath, String partitionIndex) {
         log.info("Find destination folder for masterName{} partitionIndex {} ", masterPath, partitionIndex);
         String masterName = new File(masterPath).getName();
         Map<String, String> bases = getPartitionBases();
         String pattern = bases.get(partitionIndex);
         String[] tokens = pattern.split("/");
         StringBuilder result = new StringBuilder();
-        result.append(model.getBaseFolder());
+        result.append(baseFolder);
         for (String token : tokens) {
             result.append("/");
             token = token.trim();
@@ -101,7 +100,7 @@ public abstract class AbstractFileOpsController implements Runnable {
 
 
     Map<String, String> getPartitionBases() {
-        log.info("Splitting partition bases of "+partitionBases);
+        log.trace("Splitting partition bases of "+partitionBases);
         TreeMap<String, String> res = new TreeMap<>();
         String[] split = partitionBases.trim().split(",");
         for (String s : split) {
@@ -113,11 +112,11 @@ public abstract class AbstractFileOpsController implements Runnable {
 
 
     public void run() {
-        ConcurrentHashMap<String, Runnable> currentlyUsedDevices = new ConcurrentHashMap<>();
-        HashSet<String> everStartedDevices = new HashSet<>();
+        ConcurrentHashMap<String, String> usedDevices = new ConcurrentHashMap<>();
+        ConcurrentHashMap<String, String> problematicDevices = new ConcurrentHashMap<>();
         Map<String, Map<String, Path>> mounted;
         Set<String> partitions = getPartitionBases().keySet();
-        while (!currentlyUsedDevices.isEmpty() || model.isInteractiveModeEnabled()) {
+        while (!usedDevices.isEmpty() || model.isInteractiveModeEnabled()) {
             mounted = getCurrentMountedDevices();
             for (Map.Entry<String, Map<String, Path>> entry : mounted.entrySet()) {
                 Path masterPartitionPath = entry.getValue().get(masterPartition);
@@ -125,20 +124,25 @@ public abstract class AbstractFileOpsController implements Runnable {
 
                 if (masterFile != null) {
                     String masterKey = masterFile.getName();
-                     if (!everStartedDevices.contains(masterKey)) {
-                         Runnable worker = new FileOpsWorker(entry, partitions, masterFile,
-                                                             () -> currentlyUsedDevices.remove(masterKey));
-                         everStartedDevices.add(masterKey);
-                         currentlyUsedDevices.put(masterKey, worker);
-                         workerTaskPool.execute(worker);
-                     }
+                    if (!usedDevices.containsKey(masterKey) && !problematicDevices.contains(masterKey)) {
+                        Runnable worker = new FileOpsWorker(entry, partitions, masterFile,
+                                                            () -> usedDevices.remove(masterKey),
+                                                            () -> {
+                                                                problematicDevices.put(masterKey, masterKey);
+                                                                usedDevices.remove(masterKey);
+                                                            });
+                        usedDevices.put(masterKey, masterKey);
+                        workerTaskPool.execute(worker);
+                    }
                 }
             }
             Uninterruptibles.sleepUninterruptibly(500, TimeUnit.MILLISECONDS);
         }
+        log.info("bye.");
     }
 
     class FileOpsWorker implements Runnable {
+
 
         private String driveName;
         private Map.Entry<String, Map<String, Path>> entry;
@@ -146,39 +150,48 @@ public abstract class AbstractFileOpsController implements Runnable {
         private File masterFile;
 
         private Runnable onDone;
-
+        private final Runnable onError;
         FileOpsWorker(Map.Entry<String, Map<String, Path>> entry, Collection<String> partitions, File masterFile,
-                      Runnable onDone) {
+                      Runnable onDone, Runnable onError) {
             this.driveName = entry.getKey();
             this.entry = entry;
             this.partitions = partitions;
             this.masterFile = masterFile;
             this.onDone = onDone;
+            this.onError = onError;
         }
 
         @Override
         public void run() {
             try {
-                doIt();
-            } finally {
-                onDone.run();
+                boolean success = doItForDisk();
+                if (success) {
+                    onDone.run();
+                } else {
+                    onError.run();
+                }
+            } catch (Throwable t){
+                onError.run();
             }
         }
 
-        private void doIt() {
+        private boolean doItForDisk() {
             int currentPartition = 0;
+            boolean allPartitionsOK = false;
+            partitionLoop:
             for (String partitionIndex : partitions) {
                 currentPartition++;
                 Path sourceFolder = entry.getValue().get(partitionIndex);
-                String destinationFolder = findDestinationFolderForPartition(masterFile.getPath(), partitionIndex);
+
                 final String sourceDevice = driveName + partitionIndex;
 
                 InteractiveModeStatus.CopyWorkerStatus statusMsg =
                         InteractiveModeStatus.CopyWorkerStatus.builder()
                                 .sourceDevice(sourceDevice)
                                 .operation("Initial preparation")
-                                .operationArguments(destinationFolder)
-                                .build();;
+                                .operationArguments(sourceFolder.toFile().getPath())
+                                .build();
+                log.info("Adding a worker {}", sourceDevice);
                 model.getCurrentWorkers().put(sourceDevice, statusMsg);
                 Uninterruptibles.sleepUninterruptibly(500, TimeUnit.MILLISECONDS);
                 String opDisplayName =
@@ -190,66 +203,98 @@ public abstract class AbstractFileOpsController implements Runnable {
                         InteractiveModeStatus.CopyWorkerStatus.builder()
                                 .sourceDevice(sourceDevice)
                                 .operation(opDisplayName)
-                                .operationArguments(destinationFolder)
+                                .operationArguments(sourceFolder.toFile().getPath())
                                 .build();
 
-                model.getCurrentWorkers().put(sourceDevice, statusMsg);
-                String masterFileId = masterFile.getName()
-                        .replaceAll("\\.\\w+", "");
-                String masterFileIdWithPartition = masterFileId+"/P"+partitionIndex;
-                if (opsMode == OperationMode.MOVE || opsMode==OperationMode.ARCHIVE) {
-                    try {
-                        helper.copyFolders(statusMsg, statusMsg.getSourceDevice(),
-                                           sourceFolder.toFile().getAbsolutePath(),
-                                           destinationFolder, copyFilter);
-
-                    } catch (RuntimeException | IOException e) {
-                        String error =
-                                "Cannot copy " +sourceFolder + "to "+ destinationFolder + " exception: "
-                                + e.getMessage();
-                        model.addError(error);
-                        model.addErrorId(masterFileIdWithPartition);
-                        log.error(e.getMessage(), e);
-                    }
-                }
-                if (opsMode==OperationMode.MOVE || opsMode==OperationMode.DELETE) {
-                    if (opsMode==OperationMode.MOVE) {
-                        Uninterruptibles.sleepUninterruptibly(500, TimeUnit.MILLISECONDS);
-                    }
-                    try {
-                        helper.zapFolders(statusMsg, sourceFolder.toFile().getAbsolutePath());
-                    } catch (RuntimeException | IOException e) {
-                        String error =
-                                "Cannot process " + destinationFolder + " exception: "
-                                + e.getMessage();
-                        model.addError(error);
-                        model.addErrorId(masterFileIdWithPartition);
-                        log.error(e.getMessage(), e);
-                    }
-                }
-                model.getSuccessfulPartitionCommand().incrementAndGet();
-
+                boolean lastPartition = currentPartition==partitions.size();
                 try {
-                    Uninterruptibles.sleepUninterruptibly(500, TimeUnit.MILLISECONDS);
-                    shellCommandsHelper.unmountPartition(statusMsg, sourceDevice, sourceDevice);
-                    if (currentPartition==partitions.size()) {
-                        Uninterruptibles.sleepUninterruptibly(1000, TimeUnit.MILLISECONDS);
-                        shellCommandsHelper.fullUnmount(statusMsg, sourceDevice, sourceDevice);
+                    allPartitionsOK = doItForPartition(partitionIndex, lastPartition, sourceDevice, sourceFolder, statusMsg);
+                    if (!allPartitionsOK) {
+                        break partitionLoop;
                     }
-                    if (!model.getErrorId().contains(masterFileIdWithPartition)) {
-                        model.addSuccessfulId(masterFileIdWithPartition);
-                    }
-
-                } catch (RuntimeException | IOException e) {
-                    String error = "Cannot unmount " + sourceDevice + " exception: " + e.getMessage();
-                    model.addError(error);
-                    model.addErrorId(masterFileIdWithPartition);
-                    log.error(e.getMessage(), e);
                 } finally {
+                    log.info("Removing a worker {}", sourceDevice);
                     model.getCurrentWorkers().remove(sourceDevice);
                 }
             }
-            model.getSuccessfulDiskCommand().incrementAndGet();
+            if (allPartitionsOK) {
+                model.getSuccessfulDiskCommand().incrementAndGet();
+            }
+            return allPartitionsOK;
+        }
+
+        private boolean doItForPartition(String partitionIndex, boolean lastPartition, String sourceDevice,
+                              Path sourceFolder,
+                              InteractiveModeStatus.CopyWorkerStatus statusMsg) {
+            String masterFileId = masterFile.getName()
+                    .replaceAll("\\.\\w+", "");
+            String masterFileIdWithPartition = masterFileId+"/P"+partitionIndex;
+            if (opsMode == OperationMode.MOVE || opsMode==OperationMode.ARCHIVE) {
+                for (String baseFolder : model.getBaseFolders()) {
+                    String destinationFolder =
+                            findDestinationFolderForPartition(baseFolder, masterFile.getPath(), partitionIndex);
+                    try {
+                        File destination = new File(destinationFolder);
+                        if (destination.exists()) {
+                            String error =
+                                    "Cannot copy to " + destinationFolder + ", media already exists";
+                            model.addError(error);
+                            model.addErrorId(masterFileIdWithPartition);
+                            return false;
+                        }
+                        helper.copyFolders(statusMsg, statusMsg.getSourceDevice(),
+                                           sourceFolder.toFile(),
+                                           destination, copyFilter);
+
+                    } catch (RuntimeException | IOException e) {
+                        String error =
+                                "Cannot copy " + sourceFolder + "to " + destinationFolder + " exception: "
+                                + e.getMessage();
+                        model.addError(error);
+                        model.addErrorId(masterFileIdWithPartition);
+                        log.error(e.getMessage(), e);
+                        return false;
+                    }
+                }
+            }
+
+            if (opsMode==OperationMode.MOVE || opsMode==OperationMode.DELETE) {
+                if (opsMode==OperationMode.MOVE) {
+                    Uninterruptibles.sleepUninterruptibly(500, TimeUnit.MILLISECONDS);
+                }
+                try {
+                    helper.zapFolders(statusMsg, sourceFolder.toFile().getAbsolutePath());
+                } catch (RuntimeException | IOException e) {
+                    String error =
+                            "Cannot process " + sourceFolder.toFile().getPath() + " exception: "
+                            + e.getMessage();
+                    model.addError(error);
+                    model.addErrorId(masterFileIdWithPartition);
+                    log.error(e.getMessage(), e);
+                    return false;
+                }
+            }
+            model.getSuccessfulPartitionCommand().incrementAndGet();
+
+            try {
+                Uninterruptibles.sleepUninterruptibly(500, TimeUnit.MILLISECONDS);
+                shellCommandsHelper.unmountPartition(statusMsg, sourceDevice, sourceDevice);
+                if (lastPartition) {
+                    Uninterruptibles.sleepUninterruptibly(1000, TimeUnit.MILLISECONDS);
+                    shellCommandsHelper.fullUnmount(statusMsg, sourceDevice, sourceDevice);
+                }
+                if (!model.getErrorId().contains(masterFileIdWithPartition)) {
+                    model.addSuccessfulId(masterFileIdWithPartition);
+                }
+
+            } catch (RuntimeException | IOException e) {
+                String error = "Cannot unmount " + sourceDevice + " exception: " + e.getMessage();
+                model.addError(error);
+                model.addErrorId(masterFileIdWithPartition);
+                log.error(e.getMessage(), e);
+                return false;
+            }
+            return true;
         }
     }
 }

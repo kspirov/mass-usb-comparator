@@ -15,9 +15,7 @@ import com.google.common.util.concurrent.Uninterruptibles;
 public class FoldersOpHelper {
 
     public void copyFolders(InteractiveModeStatus.CopyWorkerStatus model, String deviceName,
-                            String sourcePath, String destinationPath, String copyFilter) throws IOException {
-        File source = new File(sourcePath);
-        File destination = new File(destinationPath);
+                            File source, File destination, String copyFilter) throws IOException {
         FileFilter apiFilter = (pathname) -> {
             String name = pathname.getName();
             String[] filters = copyFilter.split(",");

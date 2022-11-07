@@ -1,5 +1,6 @@
 package com.github.mu.tools.interactive;
 
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -65,7 +66,14 @@ public class FileOpsCommandRunner extends AbstractCommandRunner {
 
         model.setInteractiveModeEnabled(true);
         model.setStartTimeMillis(System.currentTimeMillis());
-        model.setBaseFolder(output);
+        String[] baseFolders = output.split(",");
+        ArrayList<String> base = new ArrayList<>();
+        for (String b: baseFolders) {
+            if (StringUtils.hasText(b)) {
+                base.add(b.trim());
+            }
+        }
+        model.setBaseFolders(base);
 
         AbstractFileOpsController opsController =
                 command.equals(DELETE_OPTION_NAME)? deleteOpsController:
@@ -77,6 +85,7 @@ public class FileOpsCommandRunner extends AbstractCommandRunner {
 
         try {
             System.in.read();
+
             model.setInteractiveModeEnabled(false); // this should interrupt the process
             controllerDone.get();
             viewDone.get();
