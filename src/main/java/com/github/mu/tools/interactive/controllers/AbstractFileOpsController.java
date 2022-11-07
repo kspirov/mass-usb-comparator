@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -236,11 +237,9 @@ public abstract class AbstractFileOpsController implements Runnable {
                     try {
                         File destination = new File(destinationFolder);
                         if (destination.exists()) {
-                            String error =
-                                    "Cannot copy to " + destinationFolder + ", media already exists";
-                            model.addError(error);
-                            model.addErrorId(masterFileIdWithPartition);
-                            return false;
+                            destinationFolder = destinationFolder +"/copy-" + UUID.randomUUID();
+                            log.warn("Destination copy exists already, creating copy {} ", destinationFolder);
+                            destination = new File(destinationFolder);
                         }
                         helper.copyFolders(statusMsg, statusMsg.getSourceDevice(),
                                            sourceFolder.toFile(),

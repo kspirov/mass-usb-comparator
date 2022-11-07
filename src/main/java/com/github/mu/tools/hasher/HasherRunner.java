@@ -59,7 +59,17 @@ public class HasherRunner extends AbstractCommandRunner {
                 String hash = hashHelper.getReadableHash(file);
                 String masterName = file.getName();
                 String masterKey = masterName.substring(0, masterName.lastIndexOf("."));
-                hashes.put(masterKey, hash);
+                if (hashes.containsKey(masterKey)) {
+                    if (hashes.get(masterKey).equals(hash)) {
+                        log.warn("The following entry was available more than once, but the hash is the same:  {}", file);
+                        System.out.println("WARN: The following entry was available more than once, but the hash is the same: "+file);
+                    } else {
+                        log.error("ERROR: the following entry was available twice, and the hash is different: {}",file);
+                        System.out.println("ERROR: the following entry was available twice, and the hash is different: "+file);
+                    }
+                } else {
+                    hashes.put(masterKey, hash);
+                }
             }
             File o = new File(output);
             System.out.println("Hashes calculated, writing to "+o);
