@@ -40,13 +40,13 @@ This will generate a common file with the hashes of all master files. The list w
 
 ### Rapid wiper interactive mode
 ```
-sudo java -jar mass-usb-comparator-1.0.jar  hasher --folder=delete --file=hasher2.csv
+sudo java -jar mass-usb-comparator-1.0.jar  delete --folder=dest 
 ```
 Sudo might be necessary as otherwise the program may not have write access to the mounted media. This is not a secure deletion, just a stanard delete of all files from the mounted systems (only the partitions that are recognized and defined in the properties).
 
 ### Move data in interactive mode
 ```
-sudo java -jar mass-usb-comparator-1.0.jar  hasher --folder=delete --file=hasher2.csv
+sudo java -jar mass-usb-comparator-1.0.jar  move --folder=dest  
 ```
 This is just combination of "archive" and "wipe" mode.
  
