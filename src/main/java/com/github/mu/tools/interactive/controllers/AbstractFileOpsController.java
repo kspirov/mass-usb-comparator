@@ -27,6 +27,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public abstract class AbstractFileOpsController implements Runnable {
 
+    private final ThreadPoolExecutor workerTaskPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(3);
+
     private final InteractiveModeStatus model;
 
     private final FoldersOpHelper helper;
@@ -131,11 +133,7 @@ public abstract class AbstractFileOpsController implements Runnable {
                                                                 usedDevices.remove(masterKey);
                                                             });
                         usedDevices.put(masterKey, masterKey);
-                        try {
-                            worker.run();
-                        } catch (Throwable t) {
-                            log.error(t.getMessage(), t);
-                        }
+                        workerTaskPool.execute(worker);
                     }
                 }
             }
