@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
@@ -32,10 +33,12 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CommonShellCommandsHelper {
 
+    private final static Object EXECITE_SHELL_LOCK = new Object();
     private final String masterPartition;
     public CommonShellCommandsHelper(@Value("${master.partition}") String masterPartition) {
         this.masterPartition = masterPartition;
     }
+
 
     public void unmountPartition(InteractiveModeStatus.CopyWorkerStatus model, String displayName, String masterName)
             throws IOException {
@@ -51,7 +54,9 @@ public class CommonShellCommandsHelper {
         ExecuteWatchdog watchdog = new ExecuteWatchdog(60000);
         executor.setWatchdog(watchdog);
         executor.setExitValue(0);
-        executor.execute(cmdLine);
+        synchronized (EXECITE_SHELL_LOCK) {
+            executor.execute(cmdLine);
+        }
     }
     public void fullUnmount(InteractiveModeStatus.CopyWorkerStatus model, String displayName, String masterName)
             throws IOException {
@@ -69,7 +74,9 @@ public class CommonShellCommandsHelper {
             ExecuteWatchdog watchdog = new ExecuteWatchdog(60000);
             executor.setWatchdog(watchdog);
             executor.setExitValue(0);
-            executor.execute(cmdLine);
+            synchronized (EXECITE_SHELL_LOCK) {
+                executor.execute(cmdLine);
+            }
             retryCount--;
         } catch (IOException e) {
             if (retryCount==0) {
@@ -95,7 +102,9 @@ public class CommonShellCommandsHelper {
         executor.setWatchdog(watchdog);
         executor.setExitValue(0);
         try {
-            executor.execute(cmdLine);
+            synchronized (EXECITE_SHELL_LOCK) {
+                executor.execute(cmdLine);
+            }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
