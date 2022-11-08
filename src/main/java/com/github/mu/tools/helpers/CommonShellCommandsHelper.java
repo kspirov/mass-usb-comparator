@@ -55,7 +55,7 @@ public class CommonShellCommandsHelper {
     }
     public void fullUnmount(InteractiveModeStatus.CopyWorkerStatus model, String displayName, String masterName)
             throws IOException {
-        int retryCount = 3;
+        int retryCount = 6;
         try {
             log.info("Unmounting fully {}", masterName);
             model.setOperation("Full unmount");
@@ -75,7 +75,7 @@ public class CommonShellCommandsHelper {
             if (retryCount==0) {
                 throw e;
             } else {
-                Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
+                Uninterruptibles.sleepUninterruptibly(7-retryCount, TimeUnit.SECONDS);
             }
         }
     }
