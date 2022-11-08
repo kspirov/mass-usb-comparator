@@ -27,9 +27,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public abstract class AbstractFileOpsController implements Runnable {
 
-    private static final Object UNMOUNT_MUTEX = new Object();
-    private final ThreadPoolExecutor workerTaskPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(3);
-
     private final InteractiveModeStatus model;
 
     private final FoldersOpHelper helper;
@@ -134,7 +131,11 @@ public abstract class AbstractFileOpsController implements Runnable {
                                                                 usedDevices.remove(masterKey);
                                                             });
                         usedDevices.put(masterKey, masterKey);
-                        workerTaskPool.execute(worker);
+                        try {
+                            worker.run();
+                        } catch (Throwable t) {
+                            log.error(t.getMessage(), t);
+                        }
                     }
                 }
             }
@@ -276,25 +277,23 @@ public abstract class AbstractFileOpsController implements Runnable {
             }
             model.getSuccessfulPartitionCommand().incrementAndGet();
 
-            synchronized (UNMOUNT_MUTEX) {
-                try {
-                    Uninterruptibles.sleepUninterruptibly(500, TimeUnit.MILLISECONDS);
-                    shellCommandsHelper.unmountPartition(statusMsg, sourceDevice, sourceDevice);
-                    if (lastPartition) {
-                        Uninterruptibles.sleepUninterruptibly(1000, TimeUnit.MILLISECONDS);
-                        shellCommandsHelper.fullUnmount(statusMsg, sourceDevice, sourceDevice);
-                    }
-                    if (!model.getErrorId().contains(masterFileIdWithPartition)) {
-                        model.addSuccessfulId(masterFileIdWithPartition);
-                    }
-
-                } catch (RuntimeException | IOException e) {
-                    String error = "Cannot unmount " + sourceDevice + " exception: " + e.getMessage();
-                    model.addError(error);
-                    model.addErrorId(masterFileIdWithPartition);
-                    log.error(e.getMessage(), e);
-                    return false;
+            try {
+                Uninterruptibles.sleepUninterruptibly(500, TimeUnit.MILLISECONDS);
+                shellCommandsHelper.unmountPartition(statusMsg, sourceDevice, sourceDevice);
+                if (lastPartition) {
+                    Uninterruptibles.sleepUninterruptibly(1000, TimeUnit.MILLISECONDS);
+                    shellCommandsHelper.fullUnmount(statusMsg, sourceDevice, sourceDevice);
                 }
+                if (!model.getErrorId().contains(masterFileIdWithPartition)) {
+                    model.addSuccessfulId(masterFileIdWithPartition);
+                }
+
+            } catch (RuntimeException | IOException e) {
+                String error = "Cannot unmount " + sourceDevice + " exception: " + e.getMessage();
+                model.addError(error);
+                model.addErrorId(masterFileIdWithPartition);
+                log.error(e.getMessage(), e);
+                return false;
             }
             return true;
         }

@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
@@ -23,6 +24,7 @@ import org.springframework.util.StringUtils;
 
 import com.github.mu.tools.interactive.ArchivingConstants;
 import com.github.mu.tools.interactive.model.InteractiveModeStatus;
+import com.google.common.util.concurrent.Uninterruptibles;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -53,19 +55,29 @@ public class CommonShellCommandsHelper {
     }
     public void fullUnmount(InteractiveModeStatus.CopyWorkerStatus model, String displayName, String masterName)
             throws IOException {
-        log.info("Unmounting fully {}", masterName);
-        model.setOperation("Full unmount");
-        model.setSourceDevice(displayName);
-        model.setOperationArguments(masterName);
-        String osDeviceName = DEV_FOLDER_START + masterName;
-        CommandLine cmdLine = CommandLine.parse(String.format(FULL_UNMOUNT_CMD, osDeviceName));
-        DefaultExecutor executor = new DefaultExecutor();
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        executor.setStreamHandler(new PumpStreamHandler(baos, null));
-        ExecuteWatchdog watchdog = new ExecuteWatchdog(60000);
-        executor.setWatchdog(watchdog);
-        executor.setExitValue(0);
-        executor.execute(cmdLine);
+        int retryCount = 3;
+        try {
+            log.info("Unmounting fully {}", masterName);
+            model.setOperation("Full unmount");
+            model.setSourceDevice(displayName);
+            model.setOperationArguments(masterName);
+            String osDeviceName = DEV_FOLDER_START + masterName;
+            CommandLine cmdLine = CommandLine.parse(String.format(FULL_UNMOUNT_CMD, osDeviceName));
+            DefaultExecutor executor = new DefaultExecutor();
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            executor.setStreamHandler(new PumpStreamHandler(baos, null));
+            ExecuteWatchdog watchdog = new ExecuteWatchdog(60000);
+            executor.setWatchdog(watchdog);
+            executor.setExitValue(0);
+            executor.execute(cmdLine);
+            retryCount--;
+        } catch (IOException e) {
+            if (retryCount==0) {
+                throw e;
+            } else {
+                Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
+            }
+        }
     }
 
     /**
