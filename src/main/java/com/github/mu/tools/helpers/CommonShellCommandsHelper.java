@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
@@ -33,8 +32,14 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CommonShellCommandsHelper {
 
-    private final static Object EXECITE_SHELL_LOCK = new Object();
+    private static Object EXECUTE_SHELL_LOCK = new Object();
+
+    private static final int UNMOUNT_RETRIES = 4;
+
+    private static int UDISKSCTL_RETRIES = 6;
+
     private final String masterPartition;
+
     public CommonShellCommandsHelper(@Value("${master.partition}") String masterPartition) {
         this.masterPartition = masterPartition;
     }
@@ -42,25 +47,35 @@ public class CommonShellCommandsHelper {
 
     public void unmountPartition(InteractiveModeStatus.CopyWorkerStatus model, String displayName, String masterName)
             throws IOException {
-        log.info("Unmounting partially {}", masterName);
-        model.setOperation("Unmounting device partition");
-        model.setSourceDevice(displayName);
-        model.setOperationArguments(masterName);
-        String osDeviceName = DEV_FOLDER_START + masterName;
-        CommandLine cmdLine = CommandLine.parse(String.format(UMOUNT_CMD, osDeviceName));
-        DefaultExecutor executor = new DefaultExecutor();
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        executor.setStreamHandler(new PumpStreamHandler(baos, null));
-        ExecuteWatchdog watchdog = new ExecuteWatchdog(60000);
-        executor.setWatchdog(watchdog);
-        executor.setExitValue(0);
-        synchronized (EXECITE_SHELL_LOCK) {
-            executor.execute(cmdLine);
+        int retryCount = UNMOUNT_RETRIES;
+        try {
+            log.info("Unmounting partially {}", masterName);
+            model.setOperation("Unmounting device partition");
+            model.setSourceDevice(displayName);
+            model.setOperationArguments(masterName);
+            String osDeviceName = DEV_FOLDER_START + masterName;
+            CommandLine cmdLine = CommandLine.parse(String.format(UMOUNT_CMD, osDeviceName));
+            DefaultExecutor executor = new DefaultExecutor();
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            executor.setStreamHandler(new PumpStreamHandler(baos, null));
+            ExecuteWatchdog watchdog = new ExecuteWatchdog(60000);
+            executor.setWatchdog(watchdog);
+            executor.setExitValue(0);
+            synchronized (EXECUTE_SHELL_LOCK) {
+                executor.execute(cmdLine);
+            }
+        } catch (IOException e) {
+            if (retryCount == 0) {
+                throw e;
+            } else {
+                Uninterruptibles.sleepUninterruptibly(7 - retryCount, TimeUnit.SECONDS);
+            }
         }
     }
+
     public void fullUnmount(InteractiveModeStatus.CopyWorkerStatus model, String displayName, String masterName)
             throws IOException {
-        int retryCount = 6;
+        int retryCount = UDISKSCTL_RETRIES;
         try {
             log.info("Unmounting fully {}", masterName);
             model.setOperation("Full unmount");
@@ -74,15 +89,15 @@ public class CommonShellCommandsHelper {
             ExecuteWatchdog watchdog = new ExecuteWatchdog(60000);
             executor.setWatchdog(watchdog);
             executor.setExitValue(0);
-            synchronized (EXECITE_SHELL_LOCK) {
+            synchronized (EXECUTE_SHELL_LOCK) {
                 executor.execute(cmdLine);
             }
             retryCount--;
         } catch (IOException e) {
-            if (retryCount==0) {
+            if (retryCount == 0) {
                 throw e;
             } else {
-                Uninterruptibles.sleepUninterruptibly(7-retryCount, TimeUnit.SECONDS);
+                Uninterruptibles.sleepUninterruptibly(7 - retryCount, TimeUnit.SECONDS);
             }
         }
     }
@@ -102,20 +117,20 @@ public class CommonShellCommandsHelper {
         executor.setWatchdog(watchdog);
         executor.setExitValue(0);
         try {
-            synchronized (EXECITE_SHELL_LOCK) {
+            synchronized (EXECUTE_SHELL_LOCK) {
                 executor.execute(cmdLine);
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
         String result = baos.toString();
-        log.trace("List partitions {} ",result);
+        log.trace("List partitions {} ", result);
         return result;
     }
 
 
-     public Map<String, Map<String, Path>> getCurrentMountedDevices(String lsblkResult,
-                                                                    Set<String> partitionBases) {
+    public Map<String, Map<String, Path>> getCurrentMountedDevices(String lsblkResult,
+                                                                   Set<String> partitionBases) {
         String[] entries = lsblkResult.split("\\r?\\n|\\r");
         TreeMap<String, String> allPartitionsMap = new TreeMap<>();
         Set<String> partitionsToCopy = partitionBases;

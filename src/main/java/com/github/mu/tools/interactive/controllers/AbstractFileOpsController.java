@@ -27,7 +27,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public abstract class AbstractFileOpsController implements Runnable {
 
-    private final ThreadPoolExecutor workerTaskPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
+    private static final int WORKER_POOL_SIZE = 4;
+    private final ThreadPoolExecutor workerTaskPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(WORKER_POOL_SIZE);
 
     private final InteractiveModeStatus model;
 
