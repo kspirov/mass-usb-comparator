@@ -137,7 +137,7 @@ public abstract class AbstractFileOpsController implements Runnable {
                     }
                 }
             }
-            Uninterruptibles.sleepUninterruptibly(500, TimeUnit.MILLISECONDS);
+            Uninterruptibles.sleepUninterruptibly(1000, TimeUnit.MILLISECONDS);
         }
         log.info("bye.");
     }
