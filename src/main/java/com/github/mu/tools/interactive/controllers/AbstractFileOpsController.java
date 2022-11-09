@@ -33,7 +33,8 @@ import net.jodah.failsafe.RetryPolicy;
 public abstract class AbstractFileOpsController implements Runnable {
 
     private static final int WORKER_POOL_SIZE = 4;
-    private final ThreadPoolExecutor workerTaskPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(WORKER_POOL_SIZE);
+    private final ThreadPoolExecutor workerTaskPool =
+            (ThreadPoolExecutor) Executors.newFixedThreadPool(WORKER_POOL_SIZE);
 
     private final InteractiveModeStatus model;
 
@@ -105,9 +106,8 @@ public abstract class AbstractFileOpsController implements Runnable {
     }
 
 
-
     Map<String, String> getPartitionBases() {
-        log.trace("Splitting partition bases of "+partitionBases);
+        log.trace("Splitting partition bases of " + partitionBases);
         TreeMap<String, String> res = new TreeMap<>();
         String[] split = partitionBases.trim().split(",");
         for (String s : split) {
@@ -131,11 +131,11 @@ public abstract class AbstractFileOpsController implements Runnable {
                 File masterFile = configHelpers.findMasterFile(masterPartitionPath.toFile());
                 if (masterFile != null) {
                     String masterName = masterFile.getName();
-                    String masterKey = entry.getKey()+":"+masterFile.getName();
+                    String masterKey = entry.getKey() + ":" + masterFile.getName();
 
                     if (!usedDevices.containsKey(masterKey) && !problematicDevices.containsKey(masterKey)) {
                         Runnable worker = new FileOpsWorker(entry, partitions, masterFile,
-                                                            () ->  {
+                                                            () -> {
                                                                 usedDevices.remove(masterKey);
                                                             },
                                                             () -> {
@@ -145,6 +145,35 @@ public abstract class AbstractFileOpsController implements Runnable {
                         usedDevices.put(masterKey, masterName);
                         workerTaskPool.execute(worker);
                     }
+                } else {
+                    String masterKey = entry.getKey() + ":" + "UNKNOWN";
+                    Map<String, Path> map = entry.getValue();
+                    Collection<Path> folders = map.values();
+                    boolean emptyFolders = true;
+                    loop:
+                    for (Path p : folders) {
+                        File[] allFiles = p.toFile().listFiles();
+                        if (allFiles != null && allFiles.length > 0) {
+                            log.info("Won't unmount the disk {}", masterKey);
+                            emptyFolders = false;
+                            break loop;
+                        }
+                    }
+                    if (emptyFolders) {
+                        log.info("Will unmout the disk {} ",masterKey);
+                        if (!usedDevices.containsKey(masterKey) && !problematicDevices.containsKey(masterKey)) {
+                            Runnable worker = new UnmountWorker(entry, partitions, () -> {
+                                usedDevices.remove(masterKey);
+                            },
+                                                                () -> {
+                                                                    problematicDevices.put(masterKey, masterKey);
+                                                                    usedDevices.remove(masterKey);
+                                                                });
+                            usedDevices.put(masterKey, masterKey);
+                            workerTaskPool.execute(worker);
+                        }
+                    }
+
                 }
             }
             Uninterruptibles.sleepUninterruptibly(1000, TimeUnit.MILLISECONDS);
@@ -162,6 +191,7 @@ public abstract class AbstractFileOpsController implements Runnable {
 
         private final Runnable onDone;
         private final Runnable onError;
+
         FileOpsWorker(Map.Entry<String, Map<String, Path>> entry, Collection<String> partitions, File masterFile,
                       Runnable onDone, Runnable onError) {
             this.driveName = entry.getKey();
@@ -175,7 +205,7 @@ public abstract class AbstractFileOpsController implements Runnable {
         @Override
         public void run() {
 
-            log.info("Starting executor for disk "+driveName);
+            log.info("Starting executor for disk " + driveName);
             try {
                 boolean success = doItForDisk();
                 if (success) {
@@ -183,7 +213,7 @@ public abstract class AbstractFileOpsController implements Runnable {
                 } else {
                     onError.run();
                 }
-            } catch (Throwable t){
+            } catch (Throwable t) {
                 onError.run();
             }
         }
@@ -191,9 +221,8 @@ public abstract class AbstractFileOpsController implements Runnable {
         private boolean doItForDisk() {
             int currentPartition = 0;
             boolean allPartitionsOK = false;
-            Collection<String> sourceDevices = partitions.stream().map(x -> driveName+x).collect(
+            Collection<String> sourceDevices = partitions.stream().map(x -> driveName + x).collect(
                     Collectors.toList());
-            partitionLoop:
             for (String partitionIndex : partitions) {
                 currentPartition++;
                 Path sourceFolder = entry.getValue().get(partitionIndex);
@@ -210,8 +239,8 @@ public abstract class AbstractFileOpsController implements Runnable {
                 model.getCurrentWorkers().put(sourceDevice, statusMsg);
                 Uninterruptibles.sleepUninterruptibly(500, TimeUnit.MILLISECONDS);
                 String opDisplayName =
-                        opsMode==OperationMode.MOVE? "Moving":
-                        opsMode==OperationMode.DELETE? "Deleting":
+                        opsMode == OperationMode.MOVE ? "Moving" :
+                        opsMode == OperationMode.DELETE ? "Deleting" :
                         "Archiving";
 
                 statusMsg = InteractiveModeStatus.CopyWorkerStatus.builder()
@@ -220,9 +249,11 @@ public abstract class AbstractFileOpsController implements Runnable {
                         .operationArguments(sourceFolder.toFile().getPath())
                         .build();
                 model.getCurrentWorkers().put(sourceDevice, statusMsg);
-                boolean lastPartition = currentPartition==partitions.size();
+                boolean lastPartition = currentPartition == partitions.size();
                 try {
-                    allPartitionsOK = doItForPartition(partitionIndex, lastPartition, sourceDevice,  sourceDevices, sourceFolder, statusMsg);
+                    allPartitionsOK =
+                            doItForPartition(partitionIndex, lastPartition, sourceDevice, sourceDevices, sourceFolder,
+                                             statusMsg);
                     if (!allPartitionsOK) {
                         break;
                     }
@@ -239,19 +270,19 @@ public abstract class AbstractFileOpsController implements Runnable {
 
         private boolean doItForPartition(String partitionIndex, boolean lastPartition, String currentSourceDevice,
                                          Collection<String> allSourceDevices,
-                              Path sourceFolder,
-                              InteractiveModeStatus.CopyWorkerStatus statusMsg) {
+                                         Path sourceFolder,
+                                         InteractiveModeStatus.CopyWorkerStatus statusMsg) {
             String masterFileId = masterFile.getName()
                     .replaceAll("\\.\\w+", "");
-            String masterFileIdWithPartition = masterFileId+"/P"+partitionIndex;
-            if (opsMode == OperationMode.MOVE || opsMode==OperationMode.ARCHIVE) {
+            String masterFileIdWithPartition = masterFileId + "/P" + partitionIndex;
+            if (opsMode == OperationMode.MOVE || opsMode == OperationMode.ARCHIVE) {
                 for (String baseFolder : model.getBaseFolders()) {
                     String destinationFolder =
                             findDestinationFolderForPartition(baseFolder, masterFile.getPath(), partitionIndex);
                     try {
                         File destination = new File(destinationFolder);
                         if (destination.exists()) {
-                            destinationFolder = destinationFolder +"/copy-" + UUID.randomUUID();
+                            destinationFolder = destinationFolder + "/copy-" + UUID.randomUUID();
                             log.warn("Destination copy exists already, creating copy {} ", destinationFolder);
                             destination = new File(destinationFolder);
                         }
@@ -282,8 +313,8 @@ public abstract class AbstractFileOpsController implements Runnable {
                 }
             }
 
-            if (opsMode==OperationMode.MOVE || opsMode==OperationMode.DELETE) {
-                if (opsMode==OperationMode.MOVE) {
+            if (opsMode == OperationMode.MOVE || opsMode == OperationMode.DELETE) {
+                if (opsMode == OperationMode.MOVE) {
                     Uninterruptibles.sleepUninterruptibly(500, TimeUnit.MILLISECONDS);
                 }
                 try {
@@ -292,7 +323,8 @@ public abstract class AbstractFileOpsController implements Runnable {
                             .withDelay(Duration.ofSeconds(10))
                             .withJitter(0.50)
                             .withMaxRetries(4);
-                    Failsafe.with(retryPolicy).run(() ->   helper.zapFolders(statusMsg, sourceFolder.toFile().getAbsolutePath()));
+                    Failsafe.with(retryPolicy)
+                            .run(() -> helper.zapFolders(statusMsg, sourceFolder.toFile().getAbsolutePath()));
 
                 } catch (RuntimeException e) {
                     String message = e.getMessage();
@@ -313,7 +345,8 @@ public abstract class AbstractFileOpsController implements Runnable {
             if (lastPartition) {
                 try {
                     Uninterruptibles.sleepUninterruptibly(500, TimeUnit.MILLISECONDS);
-                    shellCommandsHelper.unmountPartition(statusMsg, allSourceDevices.toArray(new String[allSourceDevices.size()]));
+                    shellCommandsHelper.unmountPartition(statusMsg,
+                                                         allSourceDevices.toArray(new String[allSourceDevices.size()]));
                     if (!model.getErrorId().contains(masterFileIdWithPartition)) {
                         model.addSuccessfulId(masterFileIdWithPartition);
                     }
@@ -324,6 +357,55 @@ public abstract class AbstractFileOpsController implements Runnable {
                     log.error(e.getMessage(), e);
                     return false;
                 }
+            }
+            return true;
+        }
+    }
+
+    class UnmountWorker implements Runnable {
+
+
+        private final String driveName;
+        private final Collection<String> partitions;
+
+        private final Runnable onDone;
+        private final Runnable onError;
+
+        UnmountWorker(Map.Entry<String, Map<String, Path>> entry, Collection<String> partitions,
+                      Runnable onDone, Runnable onError) {
+            this.driveName = entry.getKey();
+            this.partitions = partitions;
+            this.onDone = onDone;
+            this.onError = onError;
+        }
+
+        @Override
+        public void run() {
+
+            log.info("Starting executor for disk " + driveName);
+            try {
+                boolean success = doItForDisk();
+                if (success) {
+                    onDone.run();
+                } else {
+                    onError.run();
+                }
+            } catch (Throwable t) {
+                onError.run();
+            }
+        }
+
+        private boolean doItForDisk() {
+            Collection<String> allSourceDevices = partitions.stream().map(x -> driveName + x).collect(
+                    Collectors.toList());
+
+            try {
+                Uninterruptibles.sleepUninterruptibly(500, TimeUnit.MILLISECONDS);
+                shellCommandsHelper.unmountPartition(null,
+                                                     allSourceDevices.toArray(new String[allSourceDevices.size()]));
+            } catch (RuntimeException | IOException e) {
+                log.error(e.getMessage(), e);
+                return false;
             }
             return true;
         }
