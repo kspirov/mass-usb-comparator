@@ -37,8 +37,13 @@ public class ToolsApplication implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        System.out.println("MASS USB TOOLS, version 1.10");
+        System.out.println("MASS USB TOOLS, version 1.11");
         System.out.println();
+        if (!"root".equals(System.getProperty("user.name"))) {
+            System.err.println("This program must be only used as a root");
+            System.out.println();
+            System.exit(2);
+        }
         if (args.getNonOptionArgs().size() != 1) {
             System.err.println("Wrong number of command line arguments - please give a single command");
             System.out.println();

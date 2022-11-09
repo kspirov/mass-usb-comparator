@@ -2,10 +2,8 @@ package com.github.mu.tools.interactive.model;
 
 import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.stereotype.Component;
@@ -34,14 +32,16 @@ public class InteractiveModeStatus {
     private volatile AtomicInteger successfulDiskCommand = new AtomicInteger();
     private volatile List<String> baseFolders;
     private volatile ConcurrentHashMap<String, CopyWorkerStatus> currentWorkers = new ConcurrentHashMap<>();
-    private volatile LinkedList<String> errors = new LinkedList<>();
+    private volatile LinkedHashSet<String> errors = new LinkedHashSet<>();
     private volatile LinkedHashSet<String> successfulId = new LinkedHashSet<>();
     private volatile LinkedHashSet<String> errorId = new LinkedHashSet<>();
 
     public void addError(String error) {
-        errors.addLast(error);
+        errors.add(error);
         if (errors.size() > MAX_ERROR_SIZE) {
-            errors.removeFirst();
+            Iterator<String> i = errors.iterator();
+            i.next();
+            i.remove();
         }
     }
 

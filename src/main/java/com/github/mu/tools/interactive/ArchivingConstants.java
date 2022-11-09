@@ -8,7 +8,14 @@ public interface ArchivingConstants {
 
     String LIST_PARTITIONS_CMD = "lsblk -l";
 
-    String UMOUNT_CMD = "umount %s -l";
+    String UDISK2_SERVICE_STOP = "systemctl stop udisks2";
 
-    String FULL_UNMOUNT_CMD = "udisksctl power-off -b %s";
+    String UDISK2_SERVICE_START = "systemctl start udisks2";
+
+    String SYNC_CMD = "sync";
+    String UMOUNT_CMD = "umount %s";
+
+    String UDISKCTL_UMOUNT_CMD = "umount %s -l";
+
+    String UDISKCTL_POWER_OFF_CMD = "udisksctl power-off -b %s";
 }
