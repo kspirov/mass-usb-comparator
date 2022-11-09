@@ -126,7 +126,11 @@ public abstract class AbstractFileOpsController implements Runnable {
         Set<String> partitions = getPartitionBases().keySet();
         while (!usedDevices.isEmpty() || model.isInteractiveModeEnabled()) {
             mounted = getCurrentMountedDevices();
+            diskLoop:
             for (Map.Entry<String, Map<String, Path>> entry : mounted.entrySet()) {
+                if (partitions.size() != entry.getValue().size()) {
+                    continue diskLoop;
+                }
                 Path masterPartitionPath = entry.getValue().get(masterPartition);
                 File masterFile = configHelpers.findMasterFile(masterPartitionPath.toFile());
                 if (masterFile != null) {
