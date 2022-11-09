@@ -164,15 +164,14 @@ public abstract class AbstractFileOpsController implements Runnable {
                         }
                     }
                     if (emptyFolders) {
-                        log.info("Will unmout the disk {} ",masterKey);
-                        if (!usedDevices.containsKey(masterKey) && !problematicDevices.containsKey(masterKey)) {
+                        if (!usedDevices.containsKey(masterKey) ) {
+                            log.info("Will unmout the disk {} ",masterKey);
                             Runnable worker = new UnmountWorker(entry, partitions, () -> {
                                 usedDevices.remove(masterKey);
                             },
-                                                                () -> {
-                                                                    problematicDevices.put(masterKey, masterKey);
-                                                                    usedDevices.remove(masterKey);
-                                                                });
+                            () -> {
+                                usedDevices.remove(masterKey);
+                            });
                             usedDevices.put(masterKey, masterKey);
                             workerTaskPool.execute(worker);
                         }
