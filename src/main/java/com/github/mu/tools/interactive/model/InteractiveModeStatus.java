@@ -20,7 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class InteractiveModeStatus {
 
-    private static final int MAX_ERROR_SIZE = 3;
     private static final int MAX_PREVIOUS_MEDIA_ID_SIZE = 20;
 
     private static final int MAX_ERROR_MEDIA_ID_SIZE = 8;
@@ -28,6 +27,7 @@ public class InteractiveModeStatus {
     private volatile String operationTypeDisplayName = "copy operation";
     private volatile long startTimeMillis;
     private volatile boolean interactiveModeEnabled;
+    private volatile int maxErrorSize;
     private volatile AtomicInteger successfulPartitionCommand = new AtomicInteger();
     private volatile AtomicInteger successfulDiskCommand = new AtomicInteger();
     private volatile List<String> baseFolders;
@@ -37,11 +37,14 @@ public class InteractiveModeStatus {
     private volatile LinkedHashSet<String> errorId = new LinkedHashSet<>();
 
     public void addError(String error) {
-        errors.add(error);
-        if (errors.size() > MAX_ERROR_SIZE) {
-            Iterator<String> i = errors.iterator();
-            i.next();
-            i.remove();
+        log.error("Added error {} ", error);
+        if (maxErrorSize>0) {
+            errors.add(error);
+            if (errors.size() > maxErrorSize) {
+                Iterator<String> i = errors.iterator();
+                i.next();
+                i.remove();
+            }
         }
     }
 

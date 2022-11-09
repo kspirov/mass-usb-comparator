@@ -72,7 +72,12 @@ public class FileOpsCommandRunner extends AbstractCommandRunner {
             output = "./archive";
         }
         log.info("Output folder base {} ", output);
-
+        String errors = optionArguments.get("errors");
+        int maxErrorSize = 0;
+        if (StringUtils.hasText(errors)) {
+            maxErrorSize = Integer.parseInt(errors);
+        }
+        model.setMaxErrorSize(maxErrorSize);
         model.setInteractiveModeEnabled(true);
         model.setStartTimeMillis(System.currentTimeMillis());
         String[] baseFolders = output.split(",");

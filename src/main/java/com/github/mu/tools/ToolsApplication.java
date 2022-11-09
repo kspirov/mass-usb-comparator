@@ -37,7 +37,7 @@ public class ToolsApplication implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        System.out.println("MASS USB TOOLS, version 1.16");
+        System.out.println("MASS USB TOOLS, version 1.17");
         System.out.println();
         if (!"root".equals(System.getProperty("user.name"))) {
             System.err.println("This program must be only used as a root");
