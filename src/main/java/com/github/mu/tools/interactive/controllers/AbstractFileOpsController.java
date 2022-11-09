@@ -32,6 +32,9 @@ import net.jodah.failsafe.RetryPolicy;
 @Slf4j
 public abstract class AbstractFileOpsController implements Runnable {
 
+
+    private static boolean UNMOUNT_EMPTY_FLASHES = false;
+
     private static final int WORKER_POOL_SIZE = 4;
     private static final int SECONDARY_WORKER_POOL_SIZE = 3;
     private final ThreadPoolExecutor workerTaskPool =
@@ -153,21 +156,23 @@ public abstract class AbstractFileOpsController implements Runnable {
                         workerTaskPool.execute(worker);
                     }
                 } else {
-                    String masterKey = entry.getKey() + ":" + "UNKNOWN";
-                    Map<String, Path> map = entry.getValue();
-                    Collection<Path> folders = map.values();
-                    boolean emptyFolders = existsAndHasOnlyEmptyFolders(folders, masterKey);
-                    if (emptyFolders) {
-                        if (!usedDevices.containsKey(masterKey) ) {
-                            log.info("Will unmout the disk {} ",masterKey);
-                            Runnable worker = new UnmountWorker(entry, partitions, () -> {
-                                usedDevices.remove(masterKey);
-                            },
-                            () -> {
-                                usedDevices.remove(masterKey);
-                            }, folders, masterKey);
-                            usedDevices.put(masterKey, masterKey);
-                            secondaryWorkerPool.execute(worker);
+                    if (UNMOUNT_EMPTY_FLASHES) {
+                        String masterKey = entry.getKey() + ":" + "UNKNOWN";
+                        Map<String, Path> map = entry.getValue();
+                        Collection<Path> folders = map.values();
+                        boolean emptyFolders = existsAndHasOnlyEmptyFolders(folders, masterKey);
+                        if (emptyFolders) {
+                            if (!usedDevices.containsKey(masterKey)) {
+                                log.info("Will unmout the disk {} ", masterKey);
+                                Runnable worker = new UnmountWorker(entry, partitions, () -> {
+                                    usedDevices.remove(masterKey);
+                                },
+                                                                    () -> {
+                                                                        usedDevices.remove(masterKey);
+                                                                    }, folders, masterKey);
+                                usedDevices.put(masterKey, masterKey);
+                                secondaryWorkerPool.execute(worker);
+                            }
                         }
                     }
 
@@ -336,7 +341,10 @@ public abstract class AbstractFileOpsController implements Runnable {
                         Failsafe.with(retryPolicy).run(() -> helper.copyFolders(statusMsg, statusMsg.getSourceDevice(),
                                                                                 sourceFolder.toFile(),
                                                                                 finalDestination, copyFilter));
-
+                        int n = finalDestination.listFiles().length;
+                        if (!model.getErrorId().contains(masterFileIdWithPartition)) {
+                            model.addSuccessfulId(masterFileIdWithPartition+"/"+n+"");
+                        }
 
                     } catch (RuntimeException e) {
                         String message = e.getMessage();
@@ -399,9 +407,7 @@ public abstract class AbstractFileOpsController implements Runnable {
                     Uninterruptibles.sleepUninterruptibly(500, TimeUnit.MILLISECONDS);
                     shellCommandsHelper.unmountPartition(statusMsg,
                                                          allSourceDevices.toArray(new String[allSourceDevices.size()]));
-                    if (!model.getErrorId().contains(masterFileIdWithPartition)) {
-                        model.addSuccessfulId(masterFileIdWithPartition);
-                    }
+
                 } catch (RuntimeException | IOException e) {
                     String error = "Cannot unmount " + currentSourceDevice + " exception: " + e.getMessage();
                     model.addError(error);
@@ -410,6 +416,7 @@ public abstract class AbstractFileOpsController implements Runnable {
                     return false;
                 }
             }
+
             return true;
         }
     }

@@ -21,7 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 public class InteractiveModeStatus {
 
     private static final int MAX_ERROR_SIZE = 3;
-    private static final int MAX_PREVIOUS_MEDIA_ID_SIZE = 8;
+    private static final int MAX_PREVIOUS_MEDIA_ID_SIZE = 20;
 
     private static final int MAX_ERROR_MEDIA_ID_SIZE = 8;
 

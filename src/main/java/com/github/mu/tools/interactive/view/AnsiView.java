@@ -74,7 +74,7 @@ public class AnsiView implements Runnable {
 
         if (!model.getSuccessfulId().isEmpty()) {
             System.out.println();
-            System.out.print("Last successful partitions: ");
+            System.out.print( YELLOW + "Last copied partitions: ");
             boolean first = true;
             for (String id : model.getSuccessfulId()) {
                 if (first) {
@@ -88,7 +88,7 @@ public class AnsiView implements Runnable {
         }
         if (!model.getErrorId().isEmpty()) {
             System.out.println();
-            System.out.print("Last problematic partitions: ");
+            System.out.print(YELLOW + "Last problematic partitions: ");
             boolean first = true;
             for (String id : model.getErrorId()) {
                 if (first) {
@@ -102,8 +102,9 @@ public class AnsiView implements Runnable {
 
         }
         System.out.println();
+        System.out.println();
         System.out.println(
-                YELLOW + "Ready USBs: " + WHITE + model.getSuccessfulDiskCommand() + ANSI_RESET);
+                WHITE + "Ready USBs: " + WHITE + model.getSuccessfulDiskCommand() + ANSI_RESET);
         System.out.println();
 
         System.out.print(BACKGROUND_BLUE);
