@@ -11,15 +11,12 @@ import static com.github.mu.tools.interactive.ArchivingConstants.UMOUNT_CMD;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.exec.CommandLine;

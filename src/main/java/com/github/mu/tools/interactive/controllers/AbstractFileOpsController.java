@@ -179,7 +179,7 @@ public abstract class AbstractFileOpsController implements Runnable {
 
                 }
             }
-            Uninterruptibles.sleepUninterruptibly(1000, TimeUnit.MILLISECONDS);
+            Uninterruptibles.sleepUninterruptibly(3000, TimeUnit.MILLISECONDS);
         }
         log.info("bye.");
     }
@@ -253,9 +253,33 @@ public abstract class AbstractFileOpsController implements Runnable {
                         .build();
                 model.getCurrentWorkers().put(sourceDevice, statusMsg);
                 boolean lastPartition = currentPartition == partitions.size();
+                allPartitionsOK =
+                        doItForPartition(partitionIndex, lastPartition, sourceDevice, sourceDevices, sourceFolder,
+                                         statusMsg);
+                if (!allPartitionsOK) {
+                    break;
+                }
+            }
+            currentPartition = 0;
+            for (String partitionIndex : partitions) {
+                currentPartition++;
+                Path sourceFolder = entry.getValue().get(partitionIndex);
+
+                final String sourceDevice = driveName + partitionIndex;
+
+                InteractiveModeStatus.CopyWorkerStatus statusMsg =
+                        InteractiveModeStatus.CopyWorkerStatus.builder()
+                                .sourceDevice(sourceDevice)
+                                .operation("Finalization")
+                                .operationArguments(sourceFolder.toFile().getPath())
+                                .build();
+                model.getCurrentWorkers().put(sourceDevice, statusMsg);
+                Uninterruptibles.sleepUninterruptibly(500, TimeUnit.MILLISECONDS);
+                model.getCurrentWorkers().put(sourceDevice, statusMsg);
+                boolean lastPartition = currentPartition == partitions.size();
                 try {
                     allPartitionsOK =
-                            doItForPartition(partitionIndex, lastPartition, sourceDevice, sourceDevices, sourceFolder,
+                            finalizeItForPartition(partitionIndex, lastPartition, sourceDevice, sourceDevices, sourceFolder,
                                              statusMsg);
                     if (!allPartitionsOK) {
                         break;
@@ -275,6 +299,7 @@ public abstract class AbstractFileOpsController implements Runnable {
                                          Collection<String> allSourceDevices,
                                          Path sourceFolder,
                                          InteractiveModeStatus.CopyWorkerStatus statusMsg) {
+            log.info("Copying for partition {} {} "+partitionIndex, lastPartition);
             String masterFileId = masterFile.getName()
                     .replaceAll("\\.\\w+", "");
             String masterFileIdWithPartition = masterFileId + "/P" + partitionIndex;
@@ -315,6 +340,17 @@ public abstract class AbstractFileOpsController implements Runnable {
                     }
                 }
             }
+            return true;
+        }
+
+        private boolean finalizeItForPartition(String partitionIndex, boolean lastPartition, String currentSourceDevice,
+                                         Collection<String> allSourceDevices,
+                                         Path sourceFolder,
+                                         InteractiveModeStatus.CopyWorkerStatus statusMsg) {
+            log.info("Finalizing for partition {} {} "+partitionIndex, lastPartition);
+            String masterFileId = masterFile.getName()
+                    .replaceAll("\\.\\w+", "");
+            String masterFileIdWithPartition = masterFileId + "/P" + partitionIndex;
 
             if (opsMode == OperationMode.MOVE || opsMode == OperationMode.DELETE) {
                 if (opsMode == OperationMode.MOVE) {
