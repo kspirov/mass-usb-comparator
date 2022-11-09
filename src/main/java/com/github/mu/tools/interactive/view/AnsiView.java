@@ -59,9 +59,6 @@ public class AnsiView implements Runnable {
         System.out.println(ANSI_RESET);
 
         System.out.println(YELLOW + "Destination: " + WHITE + StringUtils.collectionToCommaDelimitedString(model.getBaseFolders()) + ANSI_RESET);
-        System.out.println(
-                YELLOW + "Number of successful partitions: " + WHITE + model.getSuccessfulPartitionCommand() +
-                YELLOW + ", disks: " + WHITE + model.getSuccessfulDiskCommand() + ANSI_RESET);
 
         long millis = System.currentTimeMillis() - model.getStartTimeMillis();
         long minutes = TimeUnit.MILLISECONDS.toMinutes(millis);
@@ -69,10 +66,14 @@ public class AnsiView implements Runnable {
                        TimeUnit.MINUTES.toSeconds(minutes);
         String time = String.format("%d min, %d sec", minutes, seconds);
         System.out.println(YELLOW + "Time since the start: " + WHITE + time + ANSI_RESET);
-        System.out.println();
+
+        System.out.println(
+                YELLOW + "Number of successful partitions: " + WHITE + model.getSuccessfulPartitionCommand() +
+                YELLOW);
 
 
         if (!model.getSuccessfulId().isEmpty()) {
+            System.out.println();
             System.out.print("Last successful partitions: ");
             boolean first = true;
             for (String id : model.getSuccessfulId()) {
@@ -84,10 +85,9 @@ public class AnsiView implements Runnable {
                 System.out.print(WHITE + id);
 
             }
-            System.out.println();
-            System.out.println();
         }
         if (!model.getErrorId().isEmpty()) {
+            System.out.println();
             System.out.print("Last problematic partitions: ");
             boolean first = true;
             for (String id : model.getErrorId()) {
@@ -99,10 +99,12 @@ public class AnsiView implements Runnable {
                 System.out.print(RED + id);
 
             }
-            System.out.println();
-            System.out.println();
-        }
 
+        }
+        System.out.println();
+        System.out.println(
+                YELLOW + "Ready USBs: " + WHITE + model.getSuccessfulDiskCommand() + ANSI_RESET);
+        System.out.println();
 
         System.out.print(BACKGROUND_BLUE);
 
