@@ -69,7 +69,7 @@ public class AnsiView implements Runnable {
 
         System.out.println(
                 YELLOW + "Number of successful partitions: " + WHITE + model.getSuccessfulPartitionCommand() +
-                YELLOW);
+                ANSI_RESET);
 
 
         if (!model.getSuccessfulId().isEmpty()) {
