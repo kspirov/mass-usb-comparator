@@ -33,8 +33,11 @@ import net.jodah.failsafe.RetryPolicy;
 public abstract class AbstractFileOpsController implements Runnable {
 
     private static final int WORKER_POOL_SIZE = 4;
+    private static final int SECONDARY_WORKER_POOL_SIZE = 3;
     private final ThreadPoolExecutor workerTaskPool =
             (ThreadPoolExecutor) Executors.newFixedThreadPool(WORKER_POOL_SIZE);
+    private final ThreadPoolExecutor secondaryWorkerPool =
+            (ThreadPoolExecutor) Executors.newFixedThreadPool(SECONDARY_WORKER_POOL_SIZE);
 
     private final InteractiveModeStatus model;
 
@@ -153,16 +156,7 @@ public abstract class AbstractFileOpsController implements Runnable {
                     String masterKey = entry.getKey() + ":" + "UNKNOWN";
                     Map<String, Path> map = entry.getValue();
                     Collection<Path> folders = map.values();
-                    boolean emptyFolders = true;
-                    loop:
-                    for (Path p : folders) {
-                        File[] allFiles = p.toFile().listFiles();
-                        if (allFiles != null && allFiles.length > 0) {
-                            log.info("Won't unmount the disk {}", masterKey);
-                            emptyFolders = false;
-                            break loop;
-                        }
-                    }
+                    boolean emptyFolders = existsAndHasOnlyEmptyFolders(folders, masterKey);
                     if (emptyFolders) {
                         if (!usedDevices.containsKey(masterKey) ) {
                             log.info("Will unmout the disk {} ",masterKey);
@@ -171,9 +165,9 @@ public abstract class AbstractFileOpsController implements Runnable {
                             },
                             () -> {
                                 usedDevices.remove(masterKey);
-                            });
+                            }, folders, masterKey);
                             usedDevices.put(masterKey, masterKey);
-                            workerTaskPool.execute(worker);
+                            secondaryWorkerPool.execute(worker);
                         }
                     }
 
@@ -182,6 +176,25 @@ public abstract class AbstractFileOpsController implements Runnable {
             Uninterruptibles.sleepUninterruptibly(3000, TimeUnit.MILLISECONDS);
         }
         log.info("bye.");
+    }
+    private boolean existsAndHasOnlyEmptyFolders(Collection<Path> folders, String masterKey) {
+        boolean emptyFolders = true;
+        loop:
+        for (Path p : folders) {
+            File f = p.toFile();
+            if (!f.exists()) {
+                log.info("Won't unmount the disk, as it is already unmounted {}", masterKey);
+                emptyFolders = false;
+                break loop;
+            }
+            File[] allFiles = p.toFile().listFiles();
+            if (allFiles != null && allFiles.length > 0) {
+                log.info("Won't unmount the disk {}", masterKey);
+                emptyFolders = false;
+                break loop;
+            }
+        }
+        return emptyFolders;
     }
 
     class FileOpsWorker implements Runnable {
@@ -409,19 +422,28 @@ public abstract class AbstractFileOpsController implements Runnable {
 
         private final Runnable onDone;
         private final Runnable onError;
+        private Collection<Path> folders;
+        private String masterKey;
 
         UnmountWorker(Map.Entry<String, Map<String, Path>> entry, Collection<String> partitions,
-                      Runnable onDone, Runnable onError) {
+                      Runnable onDone, Runnable onError, Collection<Path> folders, String masterKey) {
             this.driveName = entry.getKey();
             this.partitions = partitions;
             this.onDone = onDone;
             this.onError = onError;
+            this.folders = folders;
+            this.masterKey = masterKey;
         }
 
         @Override
         public void run() {
 
             log.info("Starting executor for disk " + driveName);
+            Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
+            boolean emptyFolders = existsAndHasOnlyEmptyFolders(folders, masterKey);
+            if (!emptyFolders) {
+                log.info("Executor for disk won't be started, circumstances changed " + driveName);
+            }
             try {
                 boolean success = doItForDisk();
                 if (success) {
@@ -435,6 +457,7 @@ public abstract class AbstractFileOpsController implements Runnable {
         }
 
         private boolean doItForDisk() {
+
             Collection<String> allSourceDevices = partitions.stream().map(x -> driveName + x).collect(
                     Collectors.toList());
 
