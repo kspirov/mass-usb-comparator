@@ -78,7 +78,7 @@ public abstract class AbstractFileOpsController implements Runnable {
     String findDestinationFolderForPartition(String baseFolder, String masterPath, String partitionIndex) {
         log.info("Find destination folder for masterName{} partitionIndex {} ", masterPath, partitionIndex);
         String masterName = new File(masterPath).getName();
-        Map<String, String> bases = getPartitionBases();
+        Map<String, String> bases = getSplitPartitionBases(partitionBases);
         String pattern = bases.get(partitionIndex);
         String[] tokens = pattern.split("/");
         StringBuilder result = new StringBuilder();
@@ -108,11 +108,11 @@ public abstract class AbstractFileOpsController implements Runnable {
      */
     public Map<String, Map<String, Path>> getCurrentMountedDevices() {
         String result = shellCommandsHelper.getCurrentMountedPartitions();
-        return shellCommandsHelper.getCurrentMountedDevices(result, getPartitionBases().keySet());
+        return shellCommandsHelper.getCurrentMountedDevices(result, getSplitPartitionBases(partitionBases).keySet());
     }
 
 
-    Map<String, String> getPartitionBases() {
+    static Map<String, String> getSplitPartitionBases(String partitionBases) {
         log.trace("Splitting partition bases of " + partitionBases);
         TreeMap<String, String> res = new TreeMap<>();
         String[] split = partitionBases.trim().split(",");
@@ -129,7 +129,7 @@ public abstract class AbstractFileOpsController implements Runnable {
         Map<String, String> usedDevices = Collections.synchronizedMap(new HashMap<String, String>());
         Map<String, String> problematicDevices = Collections.synchronizedMap(new HashMap<String, String>());
         Map<String, Map<String, Path>> mounted;
-        Set<String> partitions = getPartitionBases().keySet();
+        Set<String> partitions = getSplitPartitionBases(partitionBases).keySet();
         while (!usedDevices.isEmpty() || model.isInteractiveModeEnabled()) {
             mounted = getCurrentMountedDevices();
             diskLoop:
