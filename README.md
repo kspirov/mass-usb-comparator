@@ -30,7 +30,7 @@ If you are building on different platform, have in mind the jar file is self-con
 
 ### Rapid archiver interactive mode
 ```
-java -jar mass-usb-comparator-1.0.jar  archive  --folder=base.dir
+sudo java -jar mass-usb-comparator-1.0.jar archive  --folder=base.dir
 ```
 ### Rapid hash list extractor
 ```
