@@ -50,4 +50,8 @@ sudo java -jar mass-usb-comparator-1.0.jar  move --folder=dest
 ```
 This is just combination of "archive" and "wipe" mode.
  
-# Project customization and properties (TBD)
+# Multi folder chain replication
+You can use multiple folders as destination folder, separate by comma, for example the USB must be wiped only after its content is replicated to nasfolder and localfolder, use:
+```
+sudo java -jar mass-usb-comparator-1.0.jar  move --folder=nasfolder,localfolder
+```
