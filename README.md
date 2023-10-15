@@ -6,6 +6,7 @@ This is a lightweight self-contained local tool for various semi-automatic tasks
 This is applicable for results from election voting machines, telemetry from industrial devices, data and
 metadata from smart cams.
 
+![Parliamentary elections 2022 in Bulgaria, this program in action.](https://i.imgur.com/oe5qTvW.jpg)
 # Getting Started 
 
 ## Required environment
@@ -50,7 +51,7 @@ sudo java -jar mass-usb-comparator-1.0.jar  move --folder=dest
 ```
 This is just combination of "archive" and "wipe" mode.
  
-# Multi folder chain replication
+## Multi folder chain replication
 You can use multiple folders as destination folder, in order to define the chain, separate the destination parameter by comma, for example the USB must be wiped only after its content is replicated to nasfolder and localfolder, use:
 ```
 sudo java -jar mass-usb-comparator-1.0.jar  move --folder=nasfolder,localfolder
